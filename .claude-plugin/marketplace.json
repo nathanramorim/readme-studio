@@ -1,0 +1,11 @@
+{
+  "name": "readme-studio",
+  "owner": { "name": "readme-studio" },
+  "plugins": [
+    {
+      "name": "readme-studio",
+      "source": "./",
+      "description": "README comercial com banner, selos e versões para qualquer projeto."
+    }
+  ]
+}

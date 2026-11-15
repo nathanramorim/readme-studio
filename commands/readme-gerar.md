@@ -1,0 +1,10 @@
+---
+description: Gera (ou refaz) o README comercial do projeto atual, com banner SVG, selos e tabela de versões.
+argument-hint: "[nome do projeto]"
+---
+
+Gere o README comercial deste projeto seguindo a skill `readme-comercial`.
+
+- Nome sugerido: `$ARGUMENTS` (vazio = nome da pasta do repositório).
+- O script do banner está em `${CLAUDE_PLUGIN_ROOT}/scripts/gerar_banner.py` e os templates em `${CLAUDE_PLUGIN_ROOT}/templates/`.
+- Mostre o plano e espere a confirmação antes de gravar. Não faça commit.
