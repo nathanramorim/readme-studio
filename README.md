@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="versão" src="https://img.shields.io/badge/vers%C3%A3o-0.1.0-2563eb">
+  <img alt="versão" src="https://img.shields.io/badge/vers%C3%A3o-0.2.0-2563eb">
   <img alt="licença" src="https://img.shields.io/badge/licen%C3%A7a-MIT-16a34a">
   <img alt="Claude Code" src="https://img.shields.io/badge/Claude%20Code-plugin-7c3aed">
   <img alt="agy" src="https://img.shields.io/badge/agy-skill-06b6d4">
@@ -23,7 +23,7 @@ Ele lê o seu projeto, pergunta só o que faltar, mostra o plano e só grava dep
 
 | | |
 |---|---|
-| 🎨 **Banner que sempre cabe** | Um script calcula o tamanho da fonte, então o texto nunca sai da imagem. |
+| 🎨 **Banner com a cara do projeto** | A ilustração mostra o que o projeto faz, não um desenho genérico. O texto sempre cabe. |
 | 🏷️ **Selos e versões** | Versão, licença e a tabela de versões a partir das tags do git. |
 | 🗣️ **Linguagem simples** | Texto para leigos, com comandos copiáveis. |
 | 🛡️ **Sem invenção** | Não inventa funcionalidades, números nem depoimentos. |
@@ -59,7 +59,7 @@ cp -R readme-studio/scripts readme-studio/templates .agents/skills/readme-comerc
 |---|---|
 | `/readme-gerar` | "Gere o README comercial deste projeto" |
 
-Ele pergunta nome, frase de valor, cores e três rótulos para o banner. Depois mostra o que vai criar e espera a confirmação.
+Ele pergunta nome, frase de valor e cores, e propõe ideias de desenho para o banner, a partir do que o seu projeto faz. Depois mostra o que vai criar e espera a confirmação.
 
 ### Só o banner
 
@@ -67,9 +67,11 @@ Ele pergunta nome, frase de valor, cores e três rótulos para o banner. Depois 
 python3 scripts/gerar_banner.py \
   --nome meu-projeto --kicker "Plugin para X" \
   --linha1 "Frase de valor." --linha2 "Segunda frase." \
-  --rotulos "Pasta A|Pasta B|Pasta C" \
+  --ilustracao-arquivo docs/ilustracao.svg.frag \
   --cores "#1e3a8a,#2563eb,#06b6d4" --saida docs/banner.svg
 ```
+
+Sem desenho próprio, use `--ilustracao pastas|fluxo|terminal` com `--rotulos "a|b|c"`.
 
 ## Segurança e privacidade
 
@@ -81,6 +83,7 @@ python3 scripts/gerar_banner.py \
 
 | Versão | Novidades |
 |---|---|
+| **0.2.0** | O banner agora tem ilustração própria do projeto (ou desenhos prontos: pastas, fluxo, terminal). |
 | **0.1.0** | Primeira versão: `/readme-gerar`, skill `readme-comercial`, gerador de banner e template de README. |
 
 ## Licença
