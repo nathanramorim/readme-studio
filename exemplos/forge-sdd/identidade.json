@@ -1,0 +1,15 @@
+{
+  "fundo": "#0d0f14",
+  "brilho": "#1e2a4a",
+  "texto": "#e9ecf4",
+  "suave": "#99a2b8",
+  "acento": ["#4f8ef7", "#8aa4ff", "#3ecf8e"],
+  "painel": "#12151d",
+  "borda": "#252d40",
+  "terminal_fundo": "#090b10",
+  "terminal_borda": "#363e52",
+  "ok": "#3ecf8e",
+  "fonte": "Montserrat, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+  "fonte_mono": "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+  "logo": "logo.svg.frag"
+}

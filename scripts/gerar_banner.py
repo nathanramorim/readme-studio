@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Gera docs/banner.svg (1280x420) com texto que sempre cabe.
 
+Com --identidade, o banner usa o tema do projeto (fundo, cores, fontes, logo), como a
+landing page dele. Sem ela, usa o tema azul claro padrão.
+
 O banner deve lembrar o que o projeto faz. Há duas formas de escolher o
 desenho da direita:
   --ilustracao pastas|fluxo|terminal   desenhos prontos
@@ -18,6 +21,7 @@ Os tamanhos de fonte são calculados pelo comprimento do texto, para nada
 sair do banner nem dos cards.
 """
 import argparse
+import json
 import os
 import xml.dom.minidom
 from xml.sax.saxutils import escape
@@ -104,7 +108,117 @@ def montar_ilustracao(a, rotulos, c1, c2, c3):
     return {"pastas": _pastas, "fluxo": _fluxo, "terminal": _terminal}[a.ilustracao](rotulos, c1, c2, c3)
 
 
+IDENTIDADE_PADRAO = {
+    "fundo": "#0d0f14", "brilho": "#1e2a4a", "texto": "#e9ecf4", "suave": "#99a2b8",
+    "acento": ["#4f8ef7", "#8aa4ff", "#3ecf8e"],
+    "painel": "#12151d", "borda": "#252d40",
+    "terminal_fundo": "#090b10", "terminal_borda": "#363e52", "ok": "#3ecf8e",
+    "fonte": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+    "fonte_mono": "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+    "logo": "",
+}
+
+
+def carregar_identidade(caminho):
+    """Lê o JSON de identidade e completa o que faltar com o padrão escuro."""
+    with open(caminho, encoding="utf-8") as f:
+        dados = json.load(f)
+    ident = dict(IDENTIDADE_PADRAO)
+    ident.update({k: v for k, v in dados.items() if v not in (None, "")})
+    ac = list(ident["acento"])
+    while len(ac) < 3:
+        ac.append(ac[-1])
+    ident["acento"] = ac[:3]
+    base = os.path.dirname(os.path.abspath(caminho))
+    logo = ident.get("logo") or ""
+    if logo and not os.path.isabs(logo):
+        logo = os.path.join(base, logo)
+    ident["logo"] = logo
+    return ident
+
+
+def gerar_escuro(a, ident):
+    """Layout com a identidade do projeto: fundo escuro, logo, título em degradê,
+    terminal e painel para a ilustração própria (--ilustracao-arquivo, obrigatória)."""
+    if not a.ilustracao_arquivo:
+        raise SystemExit("erro: com --identidade, informe --ilustracao-arquivo (desenho do painel da direita)")
+    with open(a.ilustracao_arquivo, encoding="utf-8") as f:
+        ilustracao = f.read()
+    logo = ""
+    if ident["logo"]:
+        with open(ident["logo"], encoding="utf-8") as f:
+            logo = f.read()
+
+    c1, c2, c3 = ident["acento"]
+    sans, mono = ident["fonte"], ident["fonte_mono"]
+    zona = ZONA_TEXTO - 20            # o texto fica à esquerda do painel
+    t1, t2 = a.titulo1 or a.nome, a.titulo2
+    f_t = min(ajusta(t, 56, zona, 0.64) for t in (t1, t2) if t) if (t1 or t2) else 56
+    f_s1 = ajusta(a.linha1, 19, zona, 0.56)
+    f_s2 = ajusta(a.linha2, 19, zona, 0.56)
+    f_nome = ajusta(a.nome, 34, 400, F_BOLD)
+    f_eye = max(11, min(14, int((zona - 20) / max(1, len(a.kicker)) / 0.78 - 1.4))) if a.kicker else 14
+    f_cmd = ajusta(a.comando, 16, 460, 0.62) if a.comando else 16
+    w_cmd = min(560, int(len(a.comando) * f_cmd * 0.62) + 44) if a.comando else 0
+
+    partes = []
+    if logo:
+        partes.append(f'<g transform="translate(80 44) scale(1.9)">{logo}</g>')
+        partes.append(f'<text x="152" y="88" font-family="{sans}" font-weight="800" font-size="{f_nome}" fill="{ident["texto"]}" letter-spacing="-0.5">{escape(a.nome)}</text>')
+    else:
+        partes.append(f'<text x="80" y="88" font-family="{sans}" font-weight="800" font-size="{f_nome}" fill="{ident["texto"]}" letter-spacing="-0.5">{escape(a.nome)}</text>')
+    if a.kicker:
+        partes.append(f'<circle cx="86" cy="140" r="5" fill="{ident["ok"]}"/>')
+        partes.append(f'<text x="100" y="145" font-family="{sans}" font-weight="600" font-size="{f_eye}" fill="{ident["suave"]}" letter-spacing="1.4">{escape(a.kicker.upper())}</text>')
+    if t1 and t1 != a.nome or t2:
+        partes.append(f'<text x="80" y="205" font-family="{sans}" font-weight="800" font-size="{f_t}" fill="#ffffff" letter-spacing="-1.2">{escape(t1)}</text>')
+        if t2:
+            partes.append(f'<text x="80" y="265" font-family="{sans}" font-weight="800" font-size="{f_t}" fill="url(#acc)" letter-spacing="-1.2">{escape(t2)}</text>')
+    if a.linha1:
+        partes.append(f'<text x="80" y="305" font-family="{sans}" font-weight="500" font-size="{f_s1}" fill="{ident["suave"]}">{escape(a.linha1)}</text>')
+    if a.linha2:
+        partes.append(f'<text x="80" y="331" font-family="{sans}" font-weight="500" font-size="{f_s2}" fill="{ident["suave"]}">{escape(a.linha2)}</text>')
+    if a.comando:
+        partes.append(f'<rect x="80" y="352" width="{w_cmd}" height="40" rx="12" fill="{ident["terminal_fundo"]}" stroke="{ident["terminal_borda"]}" stroke-width="1.2"/>')
+        partes.append(f'<text x="100" y="377" font-family="{mono}" font-weight="600" font-size="{f_cmd}" fill="{ident["ok"]}">{escape(a.comando)}</text>')
+
+    texto = "\n  ".join(partes)
+    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="{LARGURA}" height="{ALTURA}" viewBox="0 0 {LARGURA} {ALTURA}" role="img" aria-label="{escape(a.nome)}: {escape(a.titulo1)} {escape(a.titulo2)}">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="25%" r="75%">
+      <stop offset="0" stop-color="{ident["brilho"]}" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="{ident["fundo"]}"/>
+    </radialGradient>
+    <linearGradient id="acc" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="{c1}"/><stop offset="0.5" stop-color="{c2}"/><stop offset="1" stop-color="{c3}"/>
+    </linearGradient>
+    <linearGradient id="hex" x1="2" y1="4" x2="30" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="{c1}"/><stop offset="0.5" stop-color="{c2}"/><stop offset="1" stop-color="{c3}"/>
+    </linearGradient>
+    <marker id="seta" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M0 0 L7 4 L0 8 Z" fill="{c2}"/>
+    </marker>
+  </defs>
+
+  <rect width="{LARGURA}" height="{ALTURA}" fill="{ident["fundo"]}"/>
+  <rect width="{LARGURA}" height="{ALTURA}" fill="url(#glow)"/>
+
+  {texto}
+
+  <rect x="760" y="62" width="480" height="318" rx="18" fill="{ident["painel"]}" stroke="{ident["borda"]}" stroke-width="1.5"/>
+  {ilustracao}
+</svg>
+'''
+    xml.dom.minidom.parseString(svg)  # falha se o XML for inválido
+    os.makedirs(os.path.dirname(os.path.abspath(a.saida)), exist_ok=True)
+    with open(a.saida, "w", encoding="utf-8") as f:
+        f.write(svg)
+    print(f"ok: {a.saida} (tema escuro; fontes: título {f_t}, subtítulo {f_s1}/{f_s2}, eyebrow {f_eye}, comando {f_cmd})")
+
+
 def gerar(a):
+    if a.identidade:
+        return gerar_escuro(a, carregar_identidade(a.identidade))
     cores = [c.strip() for c in a.cores.split(",")]
     while len(cores) < 3:
         cores.append(cores[-1])
@@ -162,6 +276,11 @@ def main():
     p.add_argument("--ilustracao", choices=["pastas", "fluxo", "terminal"], default="pastas")
     p.add_argument("--ilustracao-arquivo", default="",
                    help="fragmento SVG próprio do projeto (x 770-1250, y 90-370)")
+    p.add_argument("--identidade", default="",
+                   help="JSON com a identidade do projeto (tema escuro: cores, fontes, logo); exige --ilustracao-arquivo")
+    p.add_argument("--titulo1", default="", help="(tema escuro) 1ª linha do título, em branco")
+    p.add_argument("--titulo2", default="", help="(tema escuro) 2ª linha do título, em degradê")
+    p.add_argument("--comando", default="", help="(tema escuro) comando de instalação, no terminal")
     p.add_argument("--cores", default="#1e3a8a,#2563eb,#06b6d4")
     p.add_argument("--saida", default="docs/banner.svg")
     gerar(p.parse_args())

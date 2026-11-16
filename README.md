@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="versão" src="https://img.shields.io/badge/vers%C3%A3o-0.2.0-2563eb">
+  <img alt="versão" src="https://img.shields.io/badge/vers%C3%A3o-0.3.0-2563eb">
   <img alt="licença" src="https://img.shields.io/badge/licen%C3%A7a-MIT-16a34a">
   <img alt="Claude Code" src="https://img.shields.io/badge/Claude%20Code-plugin-7c3aed">
   <img alt="agy" src="https://img.shields.io/badge/agy-skill-06b6d4">
@@ -23,7 +23,7 @@ Ele lê o seu projeto, pergunta só o que faltar, mostra o plano e só grava dep
 
 | | |
 |---|---|
-| 🎨 **Banner com a cara do projeto** | A ilustração mostra o que o projeto faz, não um desenho genérico. O texto sempre cabe. |
+| 🎨 **Banner com a marca do projeto** | Usa as cores, fontes, logo e personagens da landing page, e a ilustração mostra o que o projeto faz. O texto sempre cabe. |
 | 🏷️ **Selos e versões** | Versão, licença e a tabela de versões a partir das tags do git. |
 | 🗣️ **Linguagem simples** | Texto para leigos, com comandos copiáveis. |
 | 🛡️ **Sem invenção** | Não inventa funcionalidades, números nem depoimentos. |
@@ -59,11 +59,38 @@ cp -R readme-studio/scripts readme-studio/templates .agents/skills/readme-comerc
 |---|---|
 | `/readme-gerar` | "Gere o README comercial deste projeto" |
 
-Ele pergunta nome, frase de valor e cores, e propõe ideias de desenho para o banner, a partir do que o seu projeto faz. Depois mostra o que vai criar e espera a confirmação.
+Primeiro ele **procura a identidade visual do projeto** (landing page, CSS, logo, mascote) e confirma com você o que achou. Depois pergunta o que faltar, propõe ideias de desenho para o banner a partir do que o projeto faz, mostra o que vai criar e espera a confirmação.
+
+### Identidade do projeto
+
+Se o projeto já tem marca (landing page, logo, paleta), o banner a usa. A skill extrai as cores, as fontes e o logo para um `docs/img/identidade.json`. Um exemplo completo, o do forge-sdd, está em [`exemplos/forge-sdd/`](exemplos/forge-sdd/).
+
+```json
+{
+  "fundo": "#0d0f14", "brilho": "#1e2a4a", "texto": "#e9ecf4", "suave": "#99a2b8",
+  "acento": ["#4f8ef7", "#8aa4ff", "#3ecf8e"],
+  "painel": "#12151d", "borda": "#252d40",
+  "fonte": "Montserrat, system-ui, sans-serif", "logo": "logo.svg.frag"
+}
+```
+
+O que não for informado cai no tema escuro padrão. Sem identidade nenhuma, o banner usa o tema azul claro.
+
+> O GitHub mostra o SVG como imagem e não carrega fontes da web: as fontes da marca caem para a fonte do sistema.
 
 ### Só o banner
 
 ```bash
+# com a identidade do projeto
+python3 scripts/gerar_banner.py \
+  --identidade docs/img/identidade.json \
+  --ilustracao-arquivo docs/img/ilustracao.svg.frag \
+  --nome meu-projeto --kicker "Frase curta de contexto" \
+  --titulo1 "Primeira linha," --titulo2 "segunda em degradê." \
+  --linha1 "Frase de apoio." --linha2 "Segunda frase." \
+  --comando "$ npm i -g meu-projeto" --saida docs/img/banner.svg
+
+# sem identidade (tema azul claro)
 python3 scripts/gerar_banner.py \
   --nome meu-projeto --kicker "Plugin para X" \
   --linha1 "Frase de valor." --linha2 "Segunda frase." \
@@ -71,7 +98,7 @@ python3 scripts/gerar_banner.py \
   --cores "#1e3a8a,#2563eb,#06b6d4" --saida docs/banner.svg
 ```
 
-Sem desenho próprio, use `--ilustracao pastas|fluxo|terminal` com `--rotulos "a|b|c"`.
+Com tema claro, também há desenhos prontos: `--ilustracao pastas|fluxo|terminal` com `--rotulos "a|b|c"`.
 
 ## Segurança e privacidade
 
@@ -83,6 +110,7 @@ Sem desenho próprio, use `--ilustracao pastas|fluxo|terminal` com `--rotulos "a
 
 | Versão | Novidades |
 |---|---|
+| **0.3.0** | O banner usa a identidade do projeto (cores, fontes, logo, personagens da landing page); a skill descobre a identidade antes de desenhar. |
 | **0.2.0** | O banner agora tem ilustração própria do projeto (ou desenhos prontos: pastas, fluxo, terminal). |
 | **0.1.0** | Primeira versão: `/readme-gerar`, skill `readme-comercial`, gerador de banner e template de README. |
 
