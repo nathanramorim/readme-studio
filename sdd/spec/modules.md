@@ -28,7 +28,9 @@ Dependências apontam para dentro: `commands/readme-gerar.md` (borda) -> `skills
 - [x] Falha (código 1) sem `## Requisitos`, com ela depois de `## Instalação`, com `## Antes de começar`, `{{PLACEHOLDER}}`, sem "Onde roda" ou com `pip install`; 2 para uso errado
 - [x] Projeto com dependência: exige o bloco "Cole isto na sua IA" com comando real do projeto, trava de licenças e posição antes da instalação (feat-02-01)
 - [x] Comando real também por `[project.scripts]` (`uv run <nome>`), `package.json` (`npm run`, `npx`) e `bin/` (fix-02-01)
+- [x] Exige `requisitos.toml` (projeto com dependência), `bootstrap.ps1` e `bootstrap.sh` no bloco, `requisitos.py instalar`, macOS/Linux/Windows na seção; falha com Homebrew no bloco (feat-03-01)
 
-## requisitos (`scripts/requisitos.py`)
-**Responsabilidade:** conferir (`checar`) e instalar com confirmação (`instalar`) os requisitos do readme-studio; base copiada pela skill para outros projetos (troca-se só `REQUISITOS`).
-- [x] Só biblioteca padrão; roda por link raw antes de clonar; nunca aceita licença nem lida com segredo (feat-02-01)
+## requisitos (`requisitos.toml` + `scripts/requisitos.py`, `bootstrap.sh`, `bootstrap.ps1`)
+**Responsabilidade:** conferir (`checar`) e instalar com confirmação (`instalar`) os requisitos do readme-studio em macOS, Linux e Windows. O motor é cópia exata do requisitos-para-ia (`skills.lock`); o readme-studio escreve só o `requisitos.toml`. A skill copia o motor para os projetos que gera.
+- [x] Só biblioteca padrão; nunca aceita licença nem lida com segredo (feat-02-01)
+- [x] Motor multiplataforma vendorizado, bootstrap por SO, CI em Ubuntu, Windows e macOS (feat-03-01)

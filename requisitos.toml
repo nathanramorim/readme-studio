@@ -1,0 +1,156 @@
+# Requisitos do readme-studio. Contrato: https://github.com/nathanramorim/requisitos-para-ia
+# (sdd/spec/contrato-requisitos.md, commit 5f63e02, vendorizado pelo skills.lock).
+# Fontes: cabeçalhos PEP 723 dos scripts (requires-python >=3.9; o motor pede >=3.11), skill
+# readme-comercial (Chrome headless para conferir o banner; git para tags e remote) e README.
+# Homebrew, winget e apt nunca são pré-requisito: sem o gerenciador, a próxima receita vale.
+versao = 1
+
+[projeto]
+nome = "readme-studio"
+script = "scripts/requisitos.py"
+repo = "nathanramorim/readme-studio"
+
+[[requisito]]
+id = "uv"
+descricao = "Roda os scripts e gerencia o Python (você não usa pip)"
+tipo = "programa"
+obrigatorio = true
+checar = { comando = ["uv", "--version"], versao_regex = "uv (\\d+\\.\\d+\\.\\d+)", versao_minima = "0.5", procurar_em = ["{home}/.local/bin", "{home}/.cargo/bin"] }
+  [[requisito.receita]]
+  quando = { sistema = "macos", gerenciador = "brew" }
+  comandos = [["brew", "install", "uv"]]
+  path = ["{home}/.local/bin"]
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "pacman" }
+  comandos = [["pacman", "-S", "uv"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "dnf" }
+  comandos = [["dnf", "install", "uv"]]
+  [[requisito.receita]]
+  quando = { sistema = "windows", gerenciador = "winget" }
+  comandos = [["winget", "install", "--id", "astral-sh.uv", "-e"]]
+  path = ["{home}/.local/bin"]
+  [[requisito.receita]]
+  quando = { sistema = "windows", gerenciador = "scoop" }
+  comandos = [["scoop", "install", "uv"]]
+  [[requisito.receita]]
+  quando = { sistema = "windows", gerenciador = "choco" }
+  comandos = [["choco", "install", "uv"]]
+  [[requisito.receita]]
+  quando = { sistema = "windows" }
+  manual = "Rode você: powershell -ExecutionPolicy Bypass -File scripts/bootstrap.ps1 (instalador oficial, sem administrador)."
+  path = ["{home}/.local/bin"]
+  [[requisito.receita]]
+  manual = "Rode você: sh scripts/bootstrap.sh (instalador oficial do uv em ~/.local/bin, sem sudo; no Debian e no Ubuntu o apt não tem o uv)."
+  path = ["{home}/.local/bin"]
+
+[[requisito]]
+id = "python"
+descricao = "Python 3.11 ou mais novo, instalado pelo uv (os scripts só usam a biblioteca padrão)"
+tipo = "programa"
+obrigatorio = true
+depende_de = ["uv"]
+tamanho = "cerca de 60 MB"
+cache = "pasta de Pythons do uv (uv python dir): ~/.local/share/uv/python no macOS e no Linux, %APPDATA%\\uv\\python no Windows"
+checar = { comando = ["uv", "python", "find", ">=3.11"], versao_regex = "(3\\.\\d+)" }
+  [[requisito.receita]]
+  comandos = [["uv", "python", "install", "3.12"]]
+
+[[requisito]]
+id = "git"
+descricao = "Lê as tags e o remote do projeto (tabela de versões e selos)"
+tipo = "programa"
+obrigatorio = false
+checar = { comando = ["git", "--version"], versao_regex = "git version (\\d+\\.\\d+)" }
+  [[requisito.receita]]
+  quando = { sistema = "macos" }
+  manual = "Rode você: xcode-select --install (a licença da Apple é aceita por você). Sem git, a tabela de versões começa em 0.1.0."
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "apt" }
+  comandos = [["apt-get", "install", "git"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "dnf" }
+  comandos = [["dnf", "install", "git"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "pacman" }
+  comandos = [["pacman", "-S", "git"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "zypper" }
+  comandos = [["zypper", "install", "git"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux" }
+  manual = "Instale o git pelo gerenciador da sua distro."
+  [[requisito.receita]]
+  quando = { sistema = "windows", gerenciador = "winget" }
+  comandos = [["winget", "install", "--id", "Git.Git", "-e"]]
+  [[requisito.receita]]
+  quando = { sistema = "windows", gerenciador = "scoop" }
+  comandos = [["scoop", "install", "git"]]
+  [[requisito.receita]]
+  quando = { sistema = "windows", gerenciador = "choco" }
+  comandos = [["choco", "install", "git"]]
+  [[requisito.receita]]
+  quando = { sistema = "windows" }
+  manual = "Instale o Git for Windows de https://git-scm.com/download/win (o instalador pede o seu aceite)."
+
+[[requisito]]
+id = "navegador"
+descricao = "Google Chrome ou Chromium, sem janela, para conferir se o texto do banner coube (opcional)"
+tipo = "programa"
+obrigatorio = false
+tamanho = "cerca de 500 MB"
+  [[requisito.receita]]
+  quando = { sistema = "macos" }
+  checar = { arquivo = ["/Applications/Google Chrome.app", "{home}/Applications/Google Chrome.app", "/Applications/Chromium.app"] }
+  manual = "Baixe o Chrome em https://www.google.com/chrome (os termos do Google são aceitos por você). Sem ele, confira o banner abrindo o SVG no navegador."
+  [[requisito.receita]]
+  quando = { sistema = "linux", distro = "ubuntu" }
+  checar = { arquivo = ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser", "/snap/bin/chromium"] }
+  manual = "No Ubuntu o Chromium vem pelo snap: rode você sudo snap install chromium."
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "apt" }
+  checar = { arquivo = ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"] }
+  comandos = [["apt-get", "install", "chromium"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "dnf" }
+  checar = { arquivo = ["/usr/bin/google-chrome", "/usr/bin/chromium-browser", "/usr/bin/chromium"] }
+  comandos = [["dnf", "install", "chromium"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "pacman" }
+  checar = { arquivo = ["/usr/bin/google-chrome", "/usr/bin/chromium"] }
+  comandos = [["pacman", "-S", "chromium"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "zypper" }
+  checar = { arquivo = ["/usr/bin/google-chrome", "/usr/bin/chromium"] }
+  comandos = [["zypper", "install", "chromium"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux" }
+  checar = { arquivo = ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser", "/snap/bin/chromium"] }
+  manual = "Instale o Chromium pelo gerenciador da sua distro (o Google Chrome não tem versão Linux arm64)."
+  [[requisito.receita]]
+  quando = { sistema = "windows", gerenciador = "winget" }
+  checar = { arquivo = ["C:/Program Files/Google/Chrome/Application/chrome.exe", "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe", "{env:LOCALAPPDATA}/Google/Chrome/Application/chrome.exe"] }
+  comandos = [["winget", "install", "--id", "Google.Chrome", "-e"]]
+  nota = "O winget pergunta a você o aceite dos termos do Google."
+  [[requisito.receita]]
+  quando = { sistema = "windows" }
+  checar = { arquivo = ["C:/Program Files/Google/Chrome/Application/chrome.exe", "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe", "{env:LOCALAPPDATA}/Google/Chrome/Application/chrome.exe"] }
+  manual = "Baixe o Chrome em https://www.google.com/chrome (os termos do Google são aceitos por você)."
+
+[[requisito]]
+id = "agente"
+descricao = "Agente de IA: Claude Code ou agy (Antigravity), com a sua conta"
+tipo = "pessoa"
+obrigatorio = false
+checar = { comando = ["claude", "--version"], procurar_em = ["{home}/.local/bin"] }
+  [[requisito.receita]]
+  manual = "Instale você o Claude Code (https://docs.claude.com/claude-code) ou o agy e faça o login: a conta e os termos são seus. Com o agy, siga a seção Instalação do README."
+
+[[requisito]]
+id = "disco"
+descricao = "Espaço livre para o Python do uv (e o navegador, se instalar)"
+tipo = "maquina"
+obrigatorio = false
+checar = { disco_gb = 1 }
+  [[requisito.receita]]
+  manual = "Libere cerca de 1 GB."

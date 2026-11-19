@@ -1,143 +1,87 @@
 #!/usr/bin/env -S uv run --script
 # /// script
-# requires-python = ">=3.9"
+# requires-python = ">=3.11"
 # dependencies = []
 # ///
-"""Testes do scripts/requisitos.py (sem rede, sem brew: which, subprocess e input simulados).
+"""Testes da adoção do motor requisitos-para-ia: cópias iguais ao skills.lock, receita válida nas 3
+plataformas, Homebrew nunca pré-requisito e o README com o bloco que o motor imprime.
 Uso: uv run tests/test_requisitos.py"""
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import importlib.util
 import io
 import json
 import sys
+import tomllib
 import unittest
 from pathlib import Path
-from unittest import mock
 
 REPO = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("requisitos", REPO / "scripts" / "requisitos.py")
 req = importlib.util.module_from_spec(spec)
+sys.modules["requisitos"] = req  # o motor usa dataclass, que procura o módulo em sys.modules
 spec.loader.exec_module(req)
+TOML = REPO / "requisitos.toml"
 
 
 def rodar(*args: str) -> tuple[int, str]:
     out = io.StringIO()
     with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
-        code = req.main(list(args))
+        code = req.main(["--arquivo", str(TOML), *args])
     return code, out.getvalue()
 
 
-class Processo:
-    def __init__(self, stdout: str = "", code: int = 0):
-        self.stdout, self.stderr, self.returncode = stdout, "", code
+class TestVendorizado(unittest.TestCase):
+    def test_copias_batem_com_o_skills_lock(self):
+        lock = json.loads((REPO / "skills.lock").read_text(encoding="utf-8"))
+        motor = next(s for s in lock["skills"] if s["nome"] == "requisitos-para-ia")
+        self.assertEqual(motor["modo"], "copia")
+        self.assertRegex(motor["commit"], r"^[0-9a-f]{40}$")
+        destinos = {d["destino"] for d in motor["destinos"]}
+        self.assertEqual(destinos, set(motor["arquivos"]))
+        for rel, sha in motor["arquivos"].items():
+            self.assertEqual(hashlib.sha256((REPO / rel).read_bytes()).hexdigest(), sha, rel)
 
 
-def sem_nada():
-    """Máquina vazia: nenhum programa, nenhum caminho."""
-    return [mock.patch.object(req.shutil, "which", return_value=None),
-            mock.patch.object(req.glob, "glob", return_value=[]),
-            mock.patch.object(req.sys, "version_info", (3, 8, 0))]
-
-
-class TestChecar(unittest.TestCase):
-    def test_maquina_pronta_sai_0(self):
-        with mock.patch.object(req.shutil, "which", side_effect=lambda c: f"/bin/{c}"), \
-             mock.patch.object(req.subprocess, "run", side_effect=lambda argv, **k: Processo(
-                 "/py/python3" if "find" in argv else "uv 0.9.7" if argv[0].endswith("uv") else "Python 3.12.1")), \
-             mock.patch.object(req.glob, "glob", return_value=["/Applications/Google Chrome.app"]):
-            code, out = rodar("checar")
+class TestReceita(unittest.TestCase):
+    def test_valida_nas_tres_plataformas(self):
+        code, out = rodar("validar")
         self.assertEqual(code, 0, out)
-        self.assertIn("tudo pronto", out)
+        self.assertIn("macos, linux, windows", out)
 
-    def test_faltando_obrigatorio_sai_1_e_json(self):
-        with contextlib.ExitStack() as st:
-            for p in sem_nada():
-                st.enter_context(p)
-            code, out = rodar("checar", "--json")
+    def test_homebrew_nunca_e_pre_requisito(self):
+        """Toda receita com brew tem, depois dela, outra para o mesmo sistema que não depende do brew."""
+        dados = tomllib.loads(TOML.read_text(encoding="utf-8"))
+        for item in dados["requisito"]:
+            receitas = item.get("receita", [])
+            for i, r in enumerate(receitas):
+                q = r.get("quando", {})
+                if q.get("gerenciador") != "brew":
+                    continue
+                sistema = q.get("sistema")
+                resto = [x for x in receitas[i + 1:] if x.get("quando", {}).get("sistema", sistema) == sistema
+                         and "gerenciador" not in x.get("quando", {})]
+                self.assertTrue(resto, f"{item['id']}: sem alternativa ao Homebrew")
+
+    def test_checar_json_nao_quebra(self):
+        code, out = rodar("checar", "--json")
+        self.assertIn(code, (0, 1), out)
         dados = json.loads(out)
-        self.assertEqual(code, 1)
-        self.assertFalse(dados["ok"])
-        estados = {i["id"]: i["estado"] for i in dados["itens"]}
-        self.assertEqual(estados["uv"], "faltando")
-        self.assertEqual(estados["chrome"], "aviso")  # opcional nunca derruba
-
-    def test_opcional_faltando_nao_derruba(self):
-        with mock.patch.object(req.shutil, "which", side_effect=lambda c: f"/bin/{c}"), \
-             mock.patch.object(req.subprocess, "run", side_effect=lambda argv, **k: Processo("3.12.1")), \
-             mock.patch.object(req.glob, "glob", return_value=[]):
-            code, out = rodar("checar")
-        self.assertEqual(code, 0, out)
-        self.assertIn("aviso", out)
-
-    def test_versao_antiga(self):
-        self.assertTrue(req.menor("3.8.10", "3.9"))
-        self.assertFalse(req.menor("3.12.0", "3.9"))
+        self.assertEqual({r["id"] for r in dados["requisitos"]},
+                         {"uv", "python", "git", "navegador", "agente", "disco"})
 
 
-class TestInstalar(unittest.TestCase):
-    def test_sem_terminal_nao_roda_nada(self):
-        chamadas = []
-        with contextlib.ExitStack() as st:
-            st.enter_context(mock.patch.object(req.shutil, "which", side_effect=lambda c: "/bin/brew" if c == "brew" else None))
-            st.enter_context(mock.patch.object(req.glob, "glob", return_value=[]))
-            st.enter_context(mock.patch.object(req.sys, "version_info", (3, 8, 0)))
-            st.enter_context(mock.patch.object(req.subprocess, "run", side_effect=lambda argv, **k: chamadas.append(argv) or Processo(code=1)))
-            st.enter_context(mock.patch("builtins.input", side_effect=EOFError))
-            code, out = rodar("instalar")
-        self.assertEqual(code, 1)
-        self.assertIn("$ brew install uv", out)
-        self.assertIn("não rodei", out)
-        self.assertNotIn(["brew", "install", "uv"], chamadas)
-
-    def test_sim_roda_so_o_que_falta(self):
-        chamadas = []
-        with contextlib.ExitStack() as st:
-            st.enter_context(mock.patch.object(req.shutil, "which", side_effect=lambda c: "/bin/brew" if c == "brew" else None))
-            st.enter_context(mock.patch.object(req.glob, "glob", return_value=[]))
-            st.enter_context(mock.patch.object(req.sys, "version_info", (3, 8, 0)))
-            st.enter_context(mock.patch.object(req.subprocess, "run", side_effect=lambda argv, **k: chamadas.append(argv) or Processo()))
-            rodar("instalar", "uv", "--sim")
-        self.assertIn(["brew", "install", "uv"], chamadas)
-
-    def test_tudo_ok_nada_a_instalar(self):
-        with mock.patch.object(req, "avaliar", side_effect=lambda i: {"estado": "ok"}):
-            code, out = rodar("instalar")
+class TestReadme(unittest.TestCase):
+    def test_readme_usa_o_bloco_do_motor(self):
+        code, bloco = rodar("prompt")
         self.assertEqual(code, 0)
-        self.assertIn("nada a instalar", out)
+        self.assertIn(bloco.strip(), (REPO / "README.md").read_text(encoding="utf-8"))
 
-    def test_item_desconhecido_sai_2(self):
-        self.assertEqual(rodar("instalar", "nao-existe")[0], 2)
-
-    def test_nenhum_comando_aceita_licenca(self):
-        with mock.patch.object(req.shutil, "which", side_effect=lambda c: f"/bin/{c}"):
-            for item in req.REQUISITOS:
-                for argv in (item["instalar"]() if item.get("instalar") else []):
-                    self.assertFalse(req.proibido(argv), argv)
-        self.assertTrue(req.proibido(["xcodebuild", "-license", "accept"]))
-        self.assertTrue(req.proibido(["apt-get", "install", "-y", "x"]))
-        self.assertFalse(req.proibido(["curl", "-o", "/tmp/licenca/x.woff2", "https://exemplo/x"]))  # caminho não conta
-        self.assertTrue(req.proibido(["x", "--accept-license=/dev/null"]))
-        self.assertTrue(req.proibido(["sh", "-c", "yes | /usr/bin/x"]))
-        for argv in (["sh", "-c", "yes|/usr/bin/x"], ["/bin/bash", "-c", "x"], ["x", "--accept-license:/a"],
-                     ["x", "--accept-license,/a"], ["x", "-yq"], ["x", "--license=accept"], ["x", "--agree-tos"],
-                     ["x", "--accept/x"], ["x", "-ylicen/s"], ["x", "--yes"]):
-            self.assertTrue(req.proibido(argv), argv)
-        for argv in (["brew", "install", "uv"], ["uv", "python", "install"], ["x", "--out=/tmp/licenca/y"],
-                     ["curl", "-fsSL", "--create-dirs", "-o", "/a/b.woff2", "https://cdn.exemplo/c/b.woff2"]):
-            self.assertFalse(req.proibido(argv), argv)
-
-    def test_comando_proibido_e_recusado(self):
-        item = {"id": "x", "nome": "X", "obrigatorio": True, "conferir": lambda: (False, "", ""),
-                "instalar": lambda: [["tool", "--accept-license"]]}
-        chamadas = []
-        with mock.patch.object(req, "REQUISITOS", [item]), \
-             mock.patch.object(req.subprocess, "run", side_effect=lambda argv, **k: chamadas.append(argv)):
-            code, out = rodar("instalar", "--sim")
-        self.assertEqual(code, 1)
-        self.assertIn("recusei", out)
-        self.assertEqual(chamadas, [])
+    def test_sem_brew_install_uv(self):
+        for rel in ("README.md", "templates/README.md.tmpl", "skills/readme-comercial/SKILL.md"):
+            self.assertNotIn("brew install uv", (REPO / rel).read_text(encoding="utf-8"), rel)
 
 
 if __name__ == "__main__":

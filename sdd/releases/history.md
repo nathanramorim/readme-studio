@@ -4,6 +4,12 @@ Este arquivo registra o histórico de entregas de produto deste projeto.
 
 ## Entregas
 
+### 0.6.0 — 2026-11-19 — requisitos multiplataforma (feat-03-01)
+- O `scripts/requisitos.py` passa a ser o motor requisitos-para-ia (cópia exata do commit `5f63e02`, registrada no novo `skills.lock`), com `bootstrap.sh` (macOS e Linux) e `bootstrap.ps1` (Windows), que instalam o `uv` pelo instalador oficial só com o ok da pessoa. A receita do readme-studio fica em `requisitos.toml`.
+- O README abre Requisitos com o bloco de `requisitos.py prompt` e uma linha por sistema; o Homebrew deixa de ser pré-requisito.
+- `verificar_readme.py` falha sem `requisitos.toml` (projeto com dependência), sem `bootstrap.ps1` ou `bootstrap.sh` no bloco, com Homebrew no bloco, sem `requisitos.py instalar` ou sem macOS, Linux e Windows na seção. A skill cria o `requisitos.toml` a partir dos exemplos do motor (`templates/requisitos-exemplo.toml`).
+- CI (`.github/workflows/requisitos.yml`) em ubuntu-latest, windows-latest e macos-latest.
+
 ### 0.5.0 — 2026-11-19 — prompt de instalação para a IA (feat-02-01)
 - Novo `scripts/requisitos.py` (`checar [--json]` e `instalar [item] [--sim]`): confere e instala os requisitos, pergunta antes de cada item e nunca aceita licenças nem lida com senhas. É também a base que a skill copia para outros projetos.
 - Template ganha `{{PROMPT_IA}}`: o bloco "Cole isto na sua IA" abre a seção Requisitos quando o projeto tem dependências.

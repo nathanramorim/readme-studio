@@ -13,12 +13,18 @@ A raiz do projeto é, por padrão, a pasta do README. Falha (código 1) se:
 - o projeto tiver dependência além do agente de IA (cabeçalho PEP 723, pyproject.toml,
   package.json, Brewfile... ou `brew install`/`npx`/`uv run` no README) e a seção Requisitos não
   tiver o bloco de citação "Cole isto na sua IA";
+- o projeto tiver dependência e não tiver `requisitos.toml` na raiz (a receita do motor
+  requisitos-para-ia, que a skill cria a partir dos exemplos do motor);
+- a seção Requisitos não citar macOS, Linux e Windows (o que não roda é dito, com alternativa);
 - o bloco existir e: não usar nenhum comando real do projeto (um script que existe no repositório,
   por caminho, link raw do GitHub ou `gh api .../contents/<caminho>`; um entry point de
   `[project.scripts]` com `uv run <nome>`; um `npm run <script>` ou `npx <bin>` do package.json; ou
-  um executável de uma pasta `bin/` do projeto); mandar instalar algo sem a trava "não aceite
-  licenças ... por mim"; ou vier depois do primeiro passo de instalação fora dele.
-Não confere se cada requisito é verdadeiro: isso é da skill, que só escreve o que tem fonte no projeto.
+  um executável de uma pasta `bin/` do projeto); citar o Homebrew como pré-requisito; faltar o
+  caminho do Windows (`bootstrap.ps1`) ou o do macOS/Linux (`bootstrap.sh`), ou citá-los sem que
+  existam no projeto; não mandar instalar pelo `requisitos.py instalar`; mandar instalar algo sem a
+  trava "não aceite licenças ... por mim"; ou vier depois do primeiro passo de instalação fora dele.
+O bloco certo é o que `uv run scripts/requisitos.py prompt` imprime. Não confere se cada requisito é
+verdadeiro: isso é da skill, que só escreve o que tem fonte no projeto.
 """
 from __future__ import annotations
 
@@ -34,7 +40,14 @@ ARQ_DEPENDENCIA = ("pyproject.toml", "package.json", "Brewfile", "requirements.t
 CMD_DEPENDENCIA = re.compile(r"\b(brew install|npx |uvx |uv run|npm (i|install)\b|pnpm |playwright install)")
 PASSO_INSTALACAO = re.compile(r"(plugin marketplace add|plugin install|git clone|brew install|npm (i|install)\b)")
 IGNORAR = {"node_modules", "sdd", "vendor", "dist", "build", "__pycache__", "venv", "site-packages"}
-EXT_SCRIPT = r"\.(?:py|sh|js|mjs|cjs|ts)"
+EXT_SCRIPT = r"\.(?:py|sh|ps1|js|mjs|cjs|ts)"
+RECEITA = "requisitos.toml"
+HOMEBREW = re.compile(r"\bbrew\b|homebrew", re.IGNORECASE)  # qualquer menção: o bloco do motor nunca cita
+SISTEMAS = ("macOS", "Linux", "Windows")
+BOOTSTRAP = (  # (nome, caminho, como o bloco do motor roda o arquivo)
+    ("bootstrap.ps1", "o caminho do Windows", re.compile(r"^powershell(?:\.exe)?\b.*\s-File\s+(\S*bootstrap\.ps1)(?:\s|$)", re.IGNORECASE)),
+    ("bootstrap.sh", "o caminho do macOS e do Linux", re.compile(r"^(?:sh|bash)\s+(\S*bootstrap\.sh)(?:\s|$)")),
+)
 
 
 def secao_requisitos(texto: str) -> str | None:
@@ -184,14 +197,49 @@ def comando_real(comando: str, raiz: Path, todos: list[Path], nomes: dict[str, s
     return partes[0] in executaveis
 
 
+def _existe(caminho: str, raiz: Path, todos: list[Path]) -> bool:
+    caminho = re.sub(r"^\$\{?\w+\}?/", "", caminho.replace("\\", "/")).lstrip("./")
+    return (raiz / caminho).is_file() or any(p.relative_to(raiz).as_posix().endswith(caminho) for p in todos)
+
+
+def problemas_bootstrap(comandos: list[str], raiz: Path, todos: list[Path]) -> list[str]:
+    """O bloco precisa rodar os dois bootstraps do motor (Windows e macOS/Linux), e eles precisam existir."""
+    out = []
+    for nome, caminho, forma in BOOTSTRAP:
+        rodados = [m.group(1) for m in (forma.match(c.strip()) for c in comandos) if m]
+        if not rodados:
+            out.append(f"o bloco 'Cole isto na sua IA' não tem {caminho} (um comando que roda `{nome}`, "
+                       "como no bloco de `requisitos.py prompt`)")
+        elif not any(_existe(c, raiz, todos) for c in rodados):
+            out.append(f"o bloco roda `{rodados[0]}`, mas o arquivo não existe no projeto (copie o do motor)")
+    return out
+
+
+def instala_pelo_motor(comando: str, raiz: Path, todos: list[Path]) -> bool:
+    """`uv run <caminho>/requisitos.py [--arquivo X] instalar ...`, com o requisitos.py existindo no projeto."""
+    partes = comando.split()
+    if partes[:2] != ["uv", "run"]:
+        return False
+    alvo = _depois_das_opcoes(partes[2:])
+    if not alvo.endswith("requisitos.py") or not _existe(alvo, raiz, todos):
+        return False
+    resto = partes[partes.index(alvo) + 1:]
+    if resto[:1] == ["--arquivo"]:
+        resto = resto[2:]
+    return resto[:1] == ["instalar"]
+
+
 def problemas_prompt(texto: str, raiz: Path) -> list[str]:
     out = []
     secao = secao_requisitos(texto)
     if secao is None:
         return out
     bloco = bloco_prompt(secao)
+    motivos = dependencias(raiz, texto)
+    if motivos and not (raiz / RECEITA).is_file():
+        out.append(f"falta o {RECEITA} na raiz do projeto (o projeto tem dependências: "
+                   f"{', '.join(motivos[:3])}); crie a partir dos exemplos do motor requisitos-para-ia")
     if bloco is None:
-        motivos = dependencias(raiz, texto)
         if motivos:
             out.append(f"falta o bloco '> **{MARCA} ...**' na seção Requisitos "
                        f"(o projeto tem dependências: {', '.join(motivos[:3])})")
@@ -202,6 +250,12 @@ def problemas_prompt(texto: str, raiz: Path) -> list[str]:
     if not any(comando_real(c, raiz, todos, nomes) for c in comandos):
         out.append("o bloco 'Cole isto na sua IA' não usa nenhum comando real do projeto (script do "
                    "repositório, [project.scripts], package.json ou bin/)")
+    if HOMEBREW.search(bloco):
+        out.append("o bloco 'Cole isto na sua IA' cita o Homebrew: ele nunca é pré-requisito "
+                   "(use o bloco de `requisitos.py prompt`)")
+    out += problemas_bootstrap(comandos, raiz, todos)
+    if not any(instala_pelo_motor(c, raiz, todos) for c in comandos):
+        out.append("o bloco 'Cole isto na sua IA' não manda instalar pelo `requisitos.py instalar`")
     if re.search(r"instal", bloco, flags=re.IGNORECASE) and not (
             re.search(r"n[ãa]o aceite", bloco, flags=re.IGNORECASE) and "licen" in bloco.lower()):
         out.append("o bloco manda instalar, mas não diz 'não aceite licenças nem declarações por mim'")
@@ -228,6 +282,13 @@ def problemas(texto: str, raiz: Path | None = None) -> list[str]:
     secao = secao_requisitos(texto)
     if secao is not None and "Onde roda" not in secao:
         out.append("a seção Requisitos não diz onde roda (sistema testado e agente)")
+    if secao is not None:
+        bloco = bloco_prompt(secao)
+        fora_do_bloco = secao.replace(bloco, "") if bloco else secao  # o bloco do motor sempre cita os 3
+        faltam = [s for s in SISTEMAS if s.lower() not in fora_do_bloco.lower()]
+        if faltam:
+            out.append(f"a seção Requisitos não fala de {', '.join(faltam)} (uma linha por sistema; "
+                       "o que não roda é dito, com alternativa)")
     if re.search(r"\bpip3? install\b", texto):
         out.append("o README manda usar 'pip install': use o uv")
     if raiz is not None:

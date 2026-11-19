@@ -11,6 +11,7 @@
 | 5 | Adoção do Forge SDD | 4.9.1-beta com exceção temporária da Regra 11 | Toda feature ou fix com histórico (ADR-0005) |
 | 6 | Layout x `ARQ-01` | `commands/` é a borda (equivale a `cmd/`); skill, template e script são o domínio (equivale a `internal/`) | Projeto de skill, sem pacotes Go |
 | 7 | Prompt de instalação para a IA | Script de requisitos (`checar`/`instalar`) + bloco "Cole isto na sua IA" que o usa, conferido pelo verificador | O que é determinístico vira script; o prompt só orquestra (ADR-0006) |
+| 8 | Requisitos multiplataforma | Motor requisitos-para-ia vendorizado (`skills.lock`), `requisitos.toml` e bootstrap por SO; o bloco é o de `requisitos.py prompt` | macOS, Linux e Windows com prova no CI; Homebrew nunca pré-requisito (ADR-0007) |
 
 ## Abertas
 
