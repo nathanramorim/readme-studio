@@ -21,4 +21,8 @@ Dependências apontam para dentro: `commands/readme-gerar.md` (borda) -> `skills
 
 ## template (`templates/README.md.tmpl`)
 **Responsabilidade:** estrutura única do README (banner, selos, benefícios, requisitos, instalação, uso, versões, licença).
-- [x] `{{PLACEHOLDERS}}` trocados pela skill; seções que não se aplicam são removidas
+- [x] `{{PLACEHOLDERS}}` trocados pela skill; seções que não se aplicam são removidas, menos `## Requisitos` (`{{REQUISITOS_RESUMO}}` e `{{REQ_*}}`)
+
+## verificador (`scripts/verificar_readme.py`)
+**Responsabilidade:** conferir a forma da seção `## Requisitos` de um README (não a verdade de cada item, que é da skill).
+- [x] Falha (código 1) sem `## Requisitos`, com ela depois de `## Instalação`, com `## Antes de começar`, `{{PLACEHOLDER}}`, sem "Onde roda" ou com `pip install`; 2 para uso errado

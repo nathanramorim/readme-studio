@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.9"
+# dependencies = []
+# ///
 """Gera docs/banner.svg (1280x420) com texto que sempre cabe.
 
 Com --identidade, o banner usa o tema do projeto (fundo, cores, fontes, logo), como a
@@ -12,7 +16,7 @@ desenho da direita:
                                        x 770-1250, y 90-370. Recomendado.
 
 Uso:
-  python3 -I gerar_banner.py --nome meu-projeto --kicker "PLUGIN PARA X" \\
+  uv run gerar_banner.py --nome meu-projeto --kicker "PLUGIN PARA X" \\
     --linha1 "Frase de valor." --linha2 "Segunda frase." \\
     --rotulos "Passo 1|Passo 2|Passo 3" --ilustracao fluxo \\
     --cores "#1e3a8a,#2563eb,#06b6d4" --saida docs/banner.svg

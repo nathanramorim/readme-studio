@@ -1,6 +1,6 @@
 # Status 01 — adoção do Forge SDD
 
-**Status:** Forge SDD 4.9.1-beta instalado; Constituição com 15 regras, `sdd/spec` povoado e ADR-0001 a 0005. `forge brief --check`: pronta; `forge gate`: sem falha (aviso P-24, Constituição acima do orçamento de contexto, não bloqueia).
-**Exceção:** Regra 11 (Forge beta na `main`) até 2026-12-31, ver ADR-0005.
-**Divergências:** 5 registradas na Constituição (README sem Requisitos = fix-01-01, PR #1).
-**Próximo passo:** PR `chore: adota Forge SDD` aberto; decisão humana (Camada C).
+**Status:** Forge SDD 4.9.1-beta instalado; Constituição com 15 regras, `sdd/spec` e ADR-0001 a 0005. `forge brief --check`: pronta; `forge gate`: sem falha (aviso P-24, não bloqueia).
+**Exceção:** Regra 11 (Forge beta na `main`) até 2026-12-31 (ADR-0005).
+**Fix 01-01:** seção Requisitos obrigatória + `verificar_readme.py` + banner via `uv run` (0.4.0, PR #1 empilhado). Camada B: `violacao` (2 médias, 3 baixas) corrigida, 2ª rodada `conforme` (`fixes/fix-01-01-veredito*.json`); escopo ampliado (banner via uv) para a Camada C confirmar.
+**Próximo passo:** PRs #2 e #1 abertos; decisão humana (Camada C).
