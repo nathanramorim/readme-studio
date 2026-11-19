@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="versão" src="https://img.shields.io/badge/vers%C3%A3o-0.3.0-2563eb">
+  <img alt="versão" src="https://img.shields.io/badge/vers%C3%A3o-0.4.0-2563eb">
   <img alt="licença" src="https://img.shields.io/badge/licen%C3%A7a-MIT-16a34a">
   <img alt="Claude Code" src="https://img.shields.io/badge/Claude%20Code-plugin-7c3aed">
   <img alt="agy" src="https://img.shields.io/badge/agy-skill-06b6d4">
@@ -27,11 +27,22 @@ Ele lê o seu projeto, pergunta só o que faltar, mostra o plano e só grava dep
 | 🏷️ **Selos e versões** | Versão, licença e a tabela de versões a partir das tags do git. |
 | 🗣️ **Linguagem simples** | Texto para leigos, com comandos copiáveis. |
 | 🛡️ **Sem invenção** | Não inventa funcionalidades, números nem depoimentos. |
+| 📋 **Requisitos completos** | Diz onde roda, o que instalar, o que é baixado, contas, máquina, licenças e o que você precisa fornecer, tirado do próprio projeto. |
 
-## Antes de começar
+## Requisitos
 
-- **Claude Code** ou **agy (Antigravity)**.
-- **Python 3** instalado (só para gerar o banner).
+Testado no **macOS**. Não precisa de conta, chave nem internet.
+
+| | O que precisa | Detalhe |
+|---|---|---|
+| **Onde roda** | macOS (testado), com **Claude Code** ou **agy (Antigravity)** | A skill é quem conduz; os scripts também rodam sozinhos no terminal. |
+| **Programas** | [`uv`](https://docs.astral.sh/uv/) (`brew install uv`) | Roda os scripts com Python 3 (o `uv` instala se faltar). Eles só usam a biblioteca padrão: nada de `pip`. |
+| | Google Chrome (opcional) | A skill abre o banner no Chrome, sem janela, para conferir se o texto coube. |
+| **Downloads na primeira execução** | Nenhum | Tudo vem no plugin. |
+| **Contas e chaves** | Nenhuma | Ele só lê o projeto e o `git` local. |
+| **Máquina** | Um computador comum | |
+| **Licenças e limites de uso** | MIT | Sem limites. |
+| **O que você fornece** | O projeto e algumas respostas | Ele lê o que existe (código, landing page, logo) e pergunta o que faltar, como a frase de valor e, se não estiver no projeto, o sistema testado. |
 
 ## Instalação
 
@@ -58,6 +69,12 @@ cp -R readme-studio/scripts readme-studio/templates .agents/skills/readme-comerc
 | Claude Code | agy |
 |---|---|
 | `/readme-gerar` | "Gere o README comercial deste projeto" |
+
+Para conferir a seção Requisitos de um README pronto:
+
+```bash
+uv run scripts/verificar_readme.py README.md
+```
 
 Primeiro ele **procura a identidade visual do projeto** (landing page, CSS, logo, mascote) e confirma com você o que achou. Depois pergunta o que faltar, propõe ideias de desenho para o banner a partir do que o projeto faz, mostra o que vai criar e espera a confirmação.
 
@@ -110,6 +127,7 @@ Com tema claro, também há desenhos prontos: `--ilustracao pastas|fluxo|termina
 
 | Versão | Novidades |
 |---|---|
+| **0.4.0** | Seção **Requisitos** obrigatória em todo README (onde roda, programas, downloads, contas, máquina, licenças e o que você fornece), levantada do projeto e nunca inventada, e o `verificar_readme.py`, que confere a seção. |
 | **0.3.0** | O banner usa a identidade do projeto (cores, fontes, logo, personagens da landing page); a skill descobre a identidade antes de desenhar. |
 | **0.2.0** | O banner agora tem ilustração própria do projeto (ou desenhos prontos: pastas, fluxo, terminal). |
 | **0.1.0** | Primeira versão: `/readme-gerar`, skill `readme-comercial`, gerador de banner e template de README. |
