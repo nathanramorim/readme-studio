@@ -9,10 +9,10 @@
 - **Evidência:** `templates/README.md.tmpl` na `main` (`## Antes de começar` / `{{REQUISITOS}}`) e o `README.md` deste repositório, com dois itens ("Claude Code ou agy", "Python 3 instalado"), sem sistema testado, sem `uv` e sem licenças.
 
 ## Modelo do módulo
-`enxuto`: skill (Markdown), template e um script verificador sem estado. A seção vira `## Requisitos`, obrigatória, com sete pontos fixos; o `verificar_readme.py` confere a forma (não a verdade de cada item, que é da skill).
+`enxuto`: skill (Markdown), template e um script verificador sem estado. Após a Camada B, o banner passa a rodar com `uv run` (cabeçalho PEP 723 no `gerar_banner.py`), para o README não contradizer a própria seção Requisitos; isso fecha a divergência da Regra 7. A seção vira `## Requisitos`, obrigatória, com sete pontos fixos; o `verificar_readme.py` confere a forma (não a verdade de cada item, que é da skill).
 
 ## Decisões do projeto aplicadas
-Regra 6 (sem invenção: requisito sem fonte é perguntado), Regra 7 (`uv`, PEP 723, só biblioteca padrão), Regra 8 (critério executável), Regra 9 (`## Requisitos` antes de `## Instalação`), Regra 10 (template, skill, comando e README mudam juntos), Regra 12 (versão 0.4.0 no `plugin.json`, selo e tabela de versões). ADR-0001 e ADR-0003.
+Regra 6 (sem invenção: requisito sem fonte é perguntado), Regra 7 (`uv`, PEP 723, só biblioteca padrão), Regra 8 (critério executável), Regra 9 (`## Requisitos` antes de `## Instalação`), Regra 10 (template, skill, comando e README mudam juntos), Regra 12 (versão 0.4.0 no `plugin.json`, selo, tabela de versões e `sdd/releases/history.md`). ADR-0001 e ADR-0003.
 
 ## O que já existe
 | Procurei | Onde | Achei | Decisão | Justificativa |
@@ -32,3 +32,6 @@ Nenhuma (só biblioteca padrão: `re`, `sys`, `pathlib`).
 2. O verificador falha (código 1) num README com `## Antes de começar`: `printf '## Antes de começar\n## Instalação\n' > /tmp/r.md; uv run scripts/verificar_readme.py /tmp/r.md; test $? -eq 1`.
 3. `grep -c '^## Requisitos' templates/README.md.tmpl` = 1 e `grep -c 'Antes de começar' templates/README.md.tmpl` = 0.
 4. `grep -n '"version": "0.4.0"' .claude-plugin/plugin.json` encontra a linha.
+5. `grep -c 'python3' README.md skills/readme-comercial/SKILL.md` = 0 em ambos e `head -5 scripts/gerar_banner.py | grep -c '# /// script'` = 1.
+6. `uv run scripts/gerar_banner.py --nome acme --linha1 "Frase." --saida /tmp/rs-banner/banner.svg` sai 0 (XML validado pelo script).
+7. `grep -n '0.4.0' sdd/releases/history.md` encontra a entrada.

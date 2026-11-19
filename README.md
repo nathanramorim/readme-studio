@@ -31,14 +31,14 @@ Ele lê o seu projeto, pergunta só o que faltar, mostra o plano e só grava dep
 
 ## Requisitos
 
-Testado no **macOS**. Não precisa de conta, chave nem internet.
+Testado no **macOS**. Não precisa de conta nem chave. Internet só se o `uv` precisar baixar o Python na primeira vez.
 
 | | O que precisa | Detalhe |
 |---|---|---|
 | **Onde roda** | macOS (testado), com **Claude Code** ou **agy (Antigravity)** | A skill é quem conduz; os scripts também rodam sozinhos no terminal. |
 | **Programas** | [`uv`](https://docs.astral.sh/uv/) (`brew install uv`) | Roda os scripts com Python 3 (o `uv` instala se faltar). Eles só usam a biblioteca padrão: nada de `pip`. |
 | | Google Chrome (opcional) | A skill abre o banner no Chrome, sem janela, para conferir se o texto coube. |
-| **Downloads na primeira execução** | Nenhum | Tudo vem no plugin. |
+| **Downloads na primeira execução** | Python 3, só se faltar | O `uv` baixa o Python na primeira execução (precisa de internet nessa hora) e o guarda no cache dele. Os scripts e templates já vêm no plugin. |
 | **Contas e chaves** | Nenhuma | Ele só lê o projeto e o `git` local. |
 | **Máquina** | Um computador comum | |
 | **Licenças e limites de uso** | MIT | Sem limites. |
@@ -99,7 +99,7 @@ O que não for informado cai no tema escuro padrão. Sem identidade nenhuma, o b
 
 ```bash
 # com a identidade do projeto
-python3 scripts/gerar_banner.py \
+uv run scripts/gerar_banner.py \
   --identidade docs/img/identidade.json \
   --ilustracao-arquivo docs/img/ilustracao.svg.frag \
   --nome meu-projeto --kicker "Frase curta de contexto" \
@@ -108,7 +108,7 @@ python3 scripts/gerar_banner.py \
   --comando "$ npm i -g meu-projeto" --saida docs/img/banner.svg
 
 # sem identidade (tema azul claro)
-python3 scripts/gerar_banner.py \
+uv run scripts/gerar_banner.py \
   --nome meu-projeto --kicker "Plugin para X" \
   --linha1 "Frase de valor." --linha2 "Segunda frase." \
   --ilustracao-arquivo docs/ilustracao.svg.frag \
