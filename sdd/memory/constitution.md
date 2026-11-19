@@ -122,8 +122,6 @@ A relação entre cada rule, o escopo (`globs`) e os IDs que ela cobre (`regras`
 
 | ID | Onde | O que diverge | Proposta | Tarefa |
 |----|------|---------------|----------|--------|
-| Regra 9 | `README.md` | Ainda tem `## Antes de começar`, sem `## Requisitos` | Seção Requisitos completa e `scripts/verificar_readme.py` | fix-01-01 (PR #1) |
-| Regra 7, `ARQ-04` | `skills/readme-comercial/SKILL.md` (passo 5), `scripts/gerar_banner.py` | Banner rodado com `python3 -I`, sem cabeçalho PEP 723 | Cabeçalho PEP 723 e `uv run` nas instruções | próximo `/novo-fix` |
 | Regra 3 | `exemplos/forge-sdd/`, README e SKILL.md | O exemplo de identidade usa um projeto real | Trocar por projeto fictício (`acme`) | próximo `/novo-fix` |
 | Regra 8, `TST-01` | repositório | Sem testes automatizados; critérios só por comando | `tests/` com pytest via `uv` na próxima feature | próxima `/nova-feature` |
 | Regra 15, `SEG-01` | `scripts/gerar_banner.py` | Cores e fontes da identidade entram no SVG sem validação de formato (só o XML final é conferido) | Validar `#RRGGBB` e nome de fonte na borda | próximo `/novo-fix` |
