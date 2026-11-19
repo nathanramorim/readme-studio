@@ -4,6 +4,11 @@ Este arquivo registra o histórico de entregas de produto deste projeto.
 
 ## Entregas
 
+### 0.6.1 — 2026-11-19 — motor fixo na v0.1.0 (fix-03-01)
+- `scripts/requisitos.py`, `bootstrap.sh`, `bootstrap.ps1` e `templates/requisitos-exemplo.toml` viram cópias exatas da tag `v0.1.0` do requisitos-para-ia (commit `93abe08`); o `skills.lock` registra ref, commit e sha256.
+- `requisitos.toml`: o item `python` confere com `uv python find --system` (dentro do `uv run`, sem `--system`, o uv achava o Python do próprio ambiente do script).
+- A skill avisa o que a trava da v0.1.0 recusa (código inline, `{env:}` fora de `checar`, `awk`/`sed`, `npx -c`) e que a saída é uma receita `manual`; o verificador aceita `instalar --arquivo` depois do subcomando (teste novo).
+
 ### 0.6.0 — 2026-11-19 — requisitos multiplataforma (feat-03-01)
 - O `scripts/requisitos.py` passa a ser o motor requisitos-para-ia (cópia exata do commit `5f63e02`, registrada no novo `skills.lock`), com `bootstrap.sh` (macOS e Linux) e `bootstrap.ps1` (Windows), que instalam o `uv` pelo instalador oficial só com o ok da pessoa. A receita do readme-studio fica em `requisitos.toml`.
 - O README abre Requisitos com o bloco de `requisitos.py prompt` e uma linha por sistema; o Homebrew deixa de ser pré-requisito.

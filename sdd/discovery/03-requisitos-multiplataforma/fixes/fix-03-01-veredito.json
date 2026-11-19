@@ -1,0 +1,6 @@
+{
+  "veredito": "conforme",
+  "achados": [],
+  "candidate_skill": null,
+  "resumo": "Camada A conferida numa cópia temporária do head ef0584e (igual ao head do PR #6). Os 8 critérios passam: sha256 das cópias = tag v0.1.0 = skills.lock; ref v0.1.0 e commit 93abe08; validar 0 (6 requisitos, 3 sistemas); test_requisitos e test_verificar_readme 0; verificar_readme 'requisitos: ok' e bloco do prompt literal no README (prompt da v0.1.0 byte a byte igual ao do 5f63e02, verificador e template aceitam; teste novo cobre `instalar --arquivo`); `--system` presente (o uv ainda acha Pythons gerenciados por ele, então `uv python install 3.12` satisfaz a checagem); versão 0.6.1 no plugin.json, selo, tabela e history.md; CI verde em ubuntu, windows e macos. Camada B: S-01 a S-07 sem achados; SKILL.md bate com o código da v0.1.0. Observação: status.md da iniciativa cabe ao fechamento."
+}

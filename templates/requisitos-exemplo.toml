@@ -105,13 +105,13 @@ id = "node"
 descricao = "Node 22 ou mais novo, na arquitetura nativa"
 tipo = "programa"
 obrigatorio = false
-checar = { comando = ["node", "-p", "process.arch + ' ' + process.version"], versao_regex = "v(\\d+\\.\\d+\\.\\d+)", versao_minima = "22", procurar_em = ["/opt/homebrew/opt/node@22/bin"] }
+checar = { comando = ["node", "--version"], versao_regex = "v(\\d+\\.\\d+\\.\\d+)", versao_minima = "22", procurar_em = ["/opt/homebrew/opt/node@22/bin"] }
   [[requisito.receita]]
   quando = { sistema = "macos", rosetta = true }
   manual = "Este terminal roda em Rosetta: abra um terminal arm64 para o Node nativo."
   [[requisito.receita]]
   quando = { sistema = "macos", arch = "arm64", gerenciador = "brew" }
-  checar = { comando = ["node", "-p", "process.arch + ' ' + process.version"], regex = "^arm64 ", versao_regex = "v(\\d+\\.\\d+\\.\\d+)", versao_minima = "22", procurar_em = ["/opt/homebrew/opt/node@22/bin"] }
+  checar = { comando = ["node", "--version"], arch_binario = "arm64", versao_regex = "v(\\d+\\.\\d+\\.\\d+)", versao_minima = "22", procurar_em = ["/opt/homebrew/opt/node@22/bin"] }
   comandos = [["brew", "install", "node@22"]]
   path = ["/opt/homebrew/opt/node@22/bin"]
   [[requisito.receita]]

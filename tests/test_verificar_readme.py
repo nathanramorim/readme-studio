@@ -172,6 +172,12 @@ class TestMultiplataforma(Base):
             bloco = motor.bloco_prompt(projeto) + "\n"
             self.assertEqual(self.erros(readme(bloco=bloco)), [], projeto)
 
+    def test_arquivo_depois_do_subcomando_passa(self):  # forma aceita pelo motor desde a v0.1.0
+        for troca in ("rode `uv run scripts/requisitos.py instalar --arquivo requisitos.toml --sim <item>`",
+                      "rode `uv run scripts/requisitos.py --arquivo requisitos.toml instalar --sim <item>`"):
+            bloco = BOM.replace("rode `uv run scripts/requisitos.py instalar --sim <item>`", troca)
+            self.assertEqual(self.erros(readme(bloco=bloco)), [], troca)
+
     def test_homebrew_como_pre_requisito_falha(self):
         for troca in (("instala o uv", "instala o uv com `brew install uv`"), ("Ele confere", "Instale o Homebrew. Ele confere"),
                       ("instala o uv", "instala o uv com `brew upgrade uv`"), ("instala o uv", "instala o uv com `brew reinstall uv`"),
