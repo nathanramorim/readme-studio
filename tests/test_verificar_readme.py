@@ -89,6 +89,49 @@ class TestBloco(Base):
         self.assertEqual(self.erros(readme(bloco=bloco)), [])
 
 
+class TestComandosDeclarados(Base):
+    def bloco(self, cmd: str) -> str:
+        return f'> **Cole isto na sua IA:**\n> "Rode `{cmd}` e me mostre o que falta. Não aceite licenças nem declarações por mim; instale só com meu ok."\n'
+
+    def test_entry_point_do_pyproject(self):
+        (self.raiz / "pyproject.toml").write_text('[project]\nname = "acme"\n\n[project.scripts]\ngv = "acme.cli:main"\n', encoding="utf-8")
+        self.assertEqual(self.erros(readme(bloco=self.bloco("uv run gv requisitos checar"))), [])
+        self.assertEqual(self.erros(readme(bloco=self.bloco("uv run --with x==1 gv requisitos checar"))), [])
+
+    def test_entry_point_sem_tomllib(self):  # Python 3.9/3.10: lê a seção à mão
+        from unittest import mock
+        (self.raiz / "pyproject.toml").write_text('[project.scripts]\ngv = "a:main"\n"gr" = "b:main"\n\n[build-system]\nx = 1\n', encoding="utf-8")
+        with mock.patch.dict(sys.modules, {"tomllib": None}):
+            self.assertEqual(ver._scripts_pyproject(self.raiz), {"gv", "gr"})
+
+    def test_npm_run_script(self):
+        (self.raiz / "package.json").write_text('{"name": "acme", "scripts": {"requisitos": "node r.js"}}', encoding="utf-8")
+        self.assertEqual(self.erros(readme(bloco=self.bloco("npm run requisitos -- checar"))), [])
+
+    def test_npx_bin(self):
+        (self.raiz / "package.json").write_text('{"name": "acme", "bin": {"acme-check": "cli.js"}}', encoding="utf-8")
+        self.assertEqual(self.erros(readme(bloco=self.bloco("npx acme-check checar"))), [])
+
+    def test_npx_bin_texto_usa_o_nome_do_pacote(self):
+        (self.raiz / "package.json").write_text('{"name": "@o/acme", "bin": "cli.js"}', encoding="utf-8")
+        self.assertEqual(self.erros(readme(bloco=self.bloco("npx acme checar"))), [])
+
+    def test_bin_do_plugin(self):
+        (self.raiz / "plugins" / "acme" / "bin").mkdir(parents=True)
+        (self.raiz / "plugins" / "acme" / "bin" / "acme").write_text("#!/bin/sh\n", encoding="utf-8")
+        self.assertEqual(self.erros(readme(bloco=self.bloco("acme requisitos checar"))), [])
+
+    def test_caminho_de_script(self):
+        self.assertEqual(self.erros(readme(bloco=self.bloco("uv run scripts/requisitos.py checar"))), [])
+
+    def test_nome_inventado_falha(self):
+        (self.raiz / "pyproject.toml").write_text('[project.scripts]\ngv = "acme.cli:main"\n', encoding="utf-8")
+        (self.raiz / "package.json").write_text('{"name": "acme", "scripts": {"a": "x"}, "bin": {"b": "c.js"}}', encoding="utf-8")
+        for cmd in ("uv run inventado checar", "npm run inventado", "npx inventado", "inventado checar", "uvx inventado"):
+            e = self.erros(readme(bloco=self.bloco(cmd)))
+            self.assertTrue(any("comando real" in x for x in e), (cmd, e))
+
+
 class TestAntigos(Base):
     def test_antes_de_comecar_falha(self):
         self.assertTrue(any("Antes de começar" in x for x in ver.problemas("## Antes de começar\n## Instalação\n")))

@@ -14,14 +14,16 @@ A raiz do projeto é, por padrão, a pasta do README. Falha (código 1) se:
   package.json, Brewfile... ou `brew install`/`npx`/`uv run` no README) e a seção Requisitos não
   tiver o bloco de citação "Cole isto na sua IA";
 - o bloco existir e: não usar nenhum comando real do projeto (um script que existe no repositório,
-  por caminho, link raw do GitHub ou `gh api .../contents/<caminho>`, ou um comando de uma pasta
-  `bin/` do projeto); mandar instalar algo sem a trava "não aceite licenças ... por mim"; ou vier
-  depois do primeiro passo de instalação fora dele.
+  por caminho, link raw do GitHub ou `gh api .../contents/<caminho>`; um entry point de
+  `[project.scripts]` com `uv run <nome>`; um `npm run <script>` ou `npx <bin>` do package.json; ou
+  um executável de uma pasta `bin/` do projeto); mandar instalar algo sem a trava "não aceite
+  licenças ... por mim"; ou vier depois do primeiro passo de instalação fora dele.
 Não confere se cada requisito é verdadeiro: isso é da skill, que só escreve o que tem fonte no projeto.
 """
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -93,15 +95,79 @@ def caminhos_citados(comando: str) -> list[str]:
     return [re.sub(r"^\$\{?\w+\}?/", "", a) for a in achados]
 
 
-def comando_real(comando: str, raiz: Path, todos: list[Path]) -> bool:
-    """O comando aponta para algo que existe no projeto (script ou comando de bin/)."""
+def _scripts_pyproject(raiz: Path) -> set[str]:
+    """Nomes de `[project.scripts]` do pyproject.toml (entry points: `uv run <nome>`)."""
+    arq = raiz / "pyproject.toml"
+    if not arq.is_file():
+        return set()
+    texto = arq.read_text(encoding="utf-8", errors="ignore")
+    try:
+        import tomllib
+        return set(((tomllib.loads(texto).get("project") or {}).get("scripts") or {}).keys())
+    except ImportError:  # Python < 3.11: lê só a seção
+        m = re.search(r"^\[project\.scripts\]\s*$(.*?)(?=^\[|\Z)", texto, flags=re.MULTILINE | re.DOTALL)
+        return set(re.findall(r"^\s*\"?([\w.-]+)\"?\s*=", m.group(1), flags=re.MULTILINE)) if m else set()
+    except ValueError:
+        return set()
+
+
+def _package_json(raiz: Path) -> tuple[set[str], set[str]]:
+    """(scripts, bins) do package.json: `npm run <script>` e `npx <bin>`."""
+    arq = raiz / "package.json"
+    if not arq.is_file():
+        return set(), set()
+    try:
+        dados = json.loads(arq.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set(), set()
+    scripts = set((dados.get("scripts") or {}).keys()) if isinstance(dados.get("scripts"), dict) else set()
+    b = dados.get("bin")
+    bins = set(b.keys()) if isinstance(b, dict) else ({str(dados.get("name", "")).split("/")[-1]} if b else set())
+    return scripts, bins - {""}
+
+
+def comandos_declarados(raiz: Path, todos: list[Path]) -> dict[str, set[str]]:
+    """Nomes que o projeto declara como comando: entry points, package.json e executáveis de bin/."""
+    npm_scripts, npm_bins = _package_json(raiz)
+    return {"py": _scripts_pyproject(raiz), "npm_scripts": npm_scripts, "npm_bins": npm_bins,
+            "bin": {p.name for p in todos if p.parent.name == "bin"}}
+
+
+def _depois_das_opcoes(partes: list[str]) -> str:
+    """Primeiro argumento que não é opção (pula `--with x`, `--from x`, `-q`...)."""
+    i = 0
+    while i < len(partes):
+        if partes[i] in ("--with", "--from", "--project", "--directory", "--python", "-p", "-w"):
+            i += 2
+        elif partes[i].startswith("-"):
+            i += 1
+        else:
+            return partes[i]
+    return ""
+
+
+def comando_real(comando: str, raiz: Path, todos: list[Path], nomes: dict[str, set[str]] | None = None) -> bool:
+    """O comando aponta para algo que existe no projeto: script do repositório, entry point de
+    `[project.scripts]` (`uv run <nome>`), `package.json` (`npm run <script>`, `npx <bin>`) ou `bin/`."""
     for c in caminhos_citados(comando):
         if "/" in c and ((raiz / c).is_file() or any(p.relative_to(raiz).as_posix().endswith(c) for p in todos)):
             return True
         if "/" not in c and any(p.name == c for p in todos):
             return True
+    nomes = nomes if nomes is not None else comandos_declarados(raiz, todos)
     partes = comando.split()
-    return bool(partes) and any(p.parent.name == "bin" and p.name == partes[0] for p in todos)
+    if not partes:
+        return False
+    executaveis = nomes["py"] | nomes["bin"] | nomes["npm_bins"]
+    if partes[:2] == ["uv", "run"] or partes[0] == "uvx":
+        return _depois_das_opcoes(partes[2:] if partes[0] == "uv" else partes[1:]) in executaveis
+    if partes[0] in ("npm", "pnpm", "yarn", "bun"):
+        resto = partes[2:] if len(partes) > 1 and partes[1] in ("run", "run-script") else partes[1:]
+        alvo = _depois_das_opcoes(resto)
+        return alvo in nomes["npm_scripts"] or (partes[0] != "npm" and alvo in nomes["npm_bins"])
+    if partes[0] == "npx":
+        return _depois_das_opcoes(partes[1:]) in nomes["npm_bins"]
+    return partes[0] in executaveis
 
 
 def problemas_prompt(texto: str, raiz: Path) -> list[str]:
@@ -118,9 +184,10 @@ def problemas_prompt(texto: str, raiz: Path) -> list[str]:
         return out
     comandos = re.findall(r"`([^`\n]+)`", bloco)
     todos = list(arquivos(raiz))
-    if not any(comando_real(c, raiz, todos) for c in comandos):
-        out.append("o bloco 'Cole isto na sua IA' não usa nenhum comando real do projeto "
-                   "(script de requisitos que exista no repositório ou comando de bin/)")
+    nomes = comandos_declarados(raiz, todos)
+    if not any(comando_real(c, raiz, todos, nomes) for c in comandos):
+        out.append("o bloco 'Cole isto na sua IA' não usa nenhum comando real do projeto (script do "
+                   "repositório, [project.scripts], package.json ou bin/)")
     if re.search(r"instal", bloco, flags=re.IGNORECASE) and not (
             re.search(r"n[ãa]o aceite", bloco, flags=re.IGNORECASE) and "licen" in bloco.lower()):
         out.append("o bloco manda instalar, mas não diz 'não aceite licenças nem declarações por mim'")

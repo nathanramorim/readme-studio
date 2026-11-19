@@ -2,7 +2,7 @@
   "feature_id": "feat-02",
   "branch": "feat/02-prompt-instalacao",
   "spec_status": "reviewed",
-  "updated_at": "2026-11-19T05:09:37Z",
+  "updated_at": "2026-11-19T05:24:29Z",
   "items": [
     {
       "task_id": "feat-02-01-prompt-instalacao",
@@ -28,6 +28,21 @@
         "achados": [],
         "resumo": "Rodada 4. Olhei só o delta 785f085..6ae112c. HEAD está em 6ae112c no branch feat/02-prompt-instalacao e a árvore está limpa. Camada A, só com comandos de leitura: test_requisitos.py passou 10/10. test_verificar_readme.py passou 11/11; o '[falha]' na saída é o caso negativo esperado do próprio teste. verificar_readme.py README.md imprimiu 'requisitos: ok'. Camada B: a dúvida baixa da rodada 3 está fechada. Os quatro casos dela agora devolvem True e viraram teste: ['sh','-c','yes|/usr/bin/x'], ['sh','-c','/usr/bin/yes | /bin/x'], ['x','--accept-license:/a'] e ['x','--accept-license,/a']. Continuam recusados '-yq', '-Y', '--yes=1', '--ACCEPT-LICENSE', '--license=accept', '--agree-tos', 'xcodebuild -license accept', 'sdkmanager --licenses', 'https://a/b/--accept', './--accept-license', '~/--yes', '--accept/' e '--accept/x'. A correção do 6ae112c fecha a brecha '--accept/x' que o 8e5aba5 tinha aberto. Testei sem modificar nada e não houve falso positivo nos comandos de instalação realistas: 'brew install uv', 'brew install --cask font-inter', 'uv python install [3.12]', 'uv tool install ruff', 'uv run --with playwright==1.65.2 playwright install chromium', 'npx playwright install --with-deps chromium', 'pip install --only-binary=:all: x', curl para ~/Library/Caches/... ou /tmp/licenca/... e um link com porta (https://host:8443/...). Ficam observações que não bloqueiam, porque uma lista de padrões nunca fica completa. (a) Passam '--assume-yes', '--force-yes', '--auto-accept', '--i-agree', '--eula' e '--non-interactive'. Essa família já passava antes deste delta, então não é regressão. (b) A docstring diz que o comando não pode 'passar por um shell', mas só o argv[0] é conferido. Por isso ['sudo','sh','-c',...], ['env','bash','-c',...] e ['python3','-c',...] passam quando não têm '|;\u0026`$'. O texto de dentro ainda é conferido pedaço por pedaço. (c) Há falsos positivos raros, que só fazem recusar: baixar um arquivo LICENSE ('https://a/LICENSE', '?file=LICENSE.txt'), opções de um traço com 'y' ('find -type', '-verify') e argumentos com '$'. Para o que a trava precisa fazer, ela é adequada. Os comandos são listas argv fixas escritas no bloco REQUISITOS e rodam com subprocess.run sem shell. Nada roda sem o 's' do usuário ou --sim. Uma recusa errada só faz o comando ser recusado e mandado para o usuário rodar ele mesmo. Os comandos atuais de REQUISITOS passam (brew install uv, uv python install), e o Chrome continua como 'você faz' por causa dos termos. Para endurecer a trava, se quiserem: conferir também um shell depois de sudo/env e recusar os padrões '-yes' e 'agree' em qualquer posição do pedaço. S-05: a spec não fala da trava de licença, e o delta não sai do escopo da rodada anterior. S-01, S-03, S-04 e S-06 continuam conformes: não houve mudança de camada, dependência nova, segredo nem duplicação. 're' e 'Path' já estavam importados. S-07 não achou repetição. FLX-08: nenhuma instrução embutida no diff, nos testes, no veredito-r3.json nem nas mensagens dos commits 8e5aba5 e 6ae112c."
       }
+    },
+    {
+      "task_id": "fix-02-01-comandos-declarados",
+      "title": "Fix 02-01: verificador não reconhece CLIs declaradas do projeto",
+      "spec_path": "sdd/discovery/02-prompt-instalacao/fixes/fix-02-01-comandos-declarados.md",
+      "status": "queued",
+      "rules": [
+        "ARQ-04",
+        "ARQ-06",
+        "TST-01",
+        "TST-02",
+        "TST-03"
+      ],
+      "skills_used": [],
+      "attempts": 0
     }
   ]
 }
