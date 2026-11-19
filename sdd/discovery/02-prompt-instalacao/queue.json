@@ -1,0 +1,28 @@
+{
+  "feature_id": "feat-02",
+  "branch": "feat/02-prompt-instalacao",
+  "spec_status": "reviewed",
+  "updated_at": "2026-11-19T04:58:45Z",
+  "items": [
+    {
+      "task_id": "feat-02-01-prompt-instalacao",
+      "title": "feat-02-01: prompt de instalação para a IA",
+      "spec_path": "sdd/discovery/02-prompt-instalacao/features/feat-02-01-prompt-instalacao.md",
+      "status": "queued",
+      "rules": [
+        "ARQ-04",
+        "ARQ-06",
+        "COD-01",
+        "SEG-03",
+        "SEG-04",
+        "TST-01",
+        "TST-02",
+        "DUP-02",
+        "GOV-01",
+        "FLX-07"
+      ],
+      "skills_used": [],
+      "attempts": 0
+    }
+  ]
+}
