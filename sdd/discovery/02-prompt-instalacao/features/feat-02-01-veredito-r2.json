@@ -1,0 +1,18 @@
+{
+  "veredito": "duvida",
+  "achados": [
+    {
+      "verificacao": "S-05",
+      "regra": "FLX-03",
+      "classificacao": "duvida",
+      "severidade": "media",
+      "arquivo": "scripts/requisitos.py",
+      "linha": 42,
+      "evidencia": "texto = \" \" + \" \".join(x for x in argv if \"/\" not in x).lower() + \" \"",
+      "explicacao": "O filtro descarta o argumento inteiro sempre que ele tem uma '/', não só a parte que é caminho. Testei sem modificar nada: proibido(['x','--accept-license=/dev/null']) devolve False, e proibido(['sh','-c','yes | /usr/bin/x']) também devolve False. Ou seja, um aceite de licença real passa quando vem no mesmo argumento que um caminho. Os casos comuns continuam sendo recusados (--accept-license, --agree-tos e -y sozinhos, e '--license-file /a' com o caminho separado). Nenhum item atual de REQUISITOS (brew install uv, uv python install) cai no buraco, então hoje não há falha prática. O risco fica para itens novos, e o script foi pensado como base para outros projetos.",
+      "correcao": "Em vez de descartar argumentos com '/', remova só o trecho de caminho ou URL: corte em '=' e avalie a parte antes dele, ou procure os padrões dentro de cada argumento sem as partes de caminho. Acrescente testes para '--accept-license=/x' e 'sh -c \"yes | /bin/x\"'."
+    }
+  ],
+  "candidate_skill": null,
+  "resumo": "Rodada 2: só o delta f3e4d09..39163bc, com HEAD em 39163bc e árvore limpa. Camada A, só com comandos de leitura: test_requisitos.py passou 10/10 e saiu 0. test_verificar_readme.py deu OK; o '[falha]' na saída é o caso negativo esperado do próprio teste. verificar_readme.py README.md imprimiu 'requisitos: ok' e saiu 0. Camada B: a mudança em proibido() cumpre o que promete, e o curl com destino '/tmp/licenca/...' deixou de ser recusado por engano (falso positivo resolvido, com teste). Mas o filtro descarta o argumento inteiro quando ele tem '/', e isso abre duas brechas que reproduzi: '--accept-license=/caminho' e 'sh -c \"yes | /bin/x\"'. Por isso a classificação é 'duvida' de severidade média, não 'violacao'. Os comandos de instalação de hoje são fixos e nenhum cai na brecha, mas a trava de licenças é exigência explícita do pedido (requisito 1 da rodada 1). Também confirmei que flags sozinhas ('--accept-license', '--agree-tos', '-y', 'xcodebuild -license accept') continuam sendo recusadas. A troca de ordem das linhas 6 e 7 em decisions.md é cosmética e resolve a observação da rodada 1. O veredito da rodada 1 entrou no commit como artefato. S-01, S-03, S-04 e S-06 continuam conformes: não houve mudança de camada, dependência nova ou segredo. S-07 não achou repetição. FLX-08: nenhuma instrução embutida no diff ou na mensagem de commit."
+}
