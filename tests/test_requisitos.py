@@ -120,6 +120,12 @@ class TestInstalar(unittest.TestCase):
         self.assertFalse(req.proibido(["curl", "-o", "/tmp/licenca/x.woff2", "https://exemplo/x"]))  # caminho não conta
         self.assertTrue(req.proibido(["x", "--accept-license=/dev/null"]))
         self.assertTrue(req.proibido(["sh", "-c", "yes | /usr/bin/x"]))
+        for argv in (["sh", "-c", "yes|/usr/bin/x"], ["/bin/bash", "-c", "x"], ["x", "--accept-license:/a"],
+                     ["x", "--accept-license,/a"], ["x", "-yq"], ["x", "--license=accept"], ["x", "--agree-tos"]):
+            self.assertTrue(req.proibido(argv), argv)
+        for argv in (["brew", "install", "uv"], ["uv", "python", "install"], ["x", "--out=/tmp/licenca/y"],
+                     ["curl", "-fsSL", "--create-dirs", "-o", "/a/b.woff2", "https://cdn.exemplo/c/b.woff2"]):
+            self.assertFalse(req.proibido(argv), argv)
 
     def test_comando_proibido_e_recusado(self):
         item = {"id": "x", "nome": "X", "obrigatorio": True, "conferir": lambda: (False, "", ""),

@@ -33,16 +33,26 @@ import sys
 from pathlib import Path
 
 OK, FALTA, AVISO = "ok", "faltando", "aviso"
-# Trechos que nunca podem aparecer num comando de instalação (aceitar licença ou termos por alguém).
-PROIBIDO = ("--accept", "--agree", "--yes", "yes |", "licen")
+# O motor nunca precisa de shell nem de pipe; e nenhum comando pode aceitar licença ou termos por alguém.
+SHELLS = {"sh", "bash", "zsh", "fish", "dash", "ksh"}
 
 
 def proibido(argv: list[str]) -> bool:
-    """O comando aceitaria algo por alguém? Cada argumento é partido em espaços e `=`;
-    só os pedaços que são caminho ou link (com `/`) ficam de fora."""
-    partes = [t for x in argv for t in re.split(r"[\s=]+", x) if t and "/" not in t]
-    texto = " " + " ".join(partes).lower() + " "
-    return any(p in texto for p in PROIBIDO) or " -y " in texto
+    """O comando aceitaria algo por alguém (ou passaria por um shell, onde isso não dá para conferir)?
+
+    Caminhos e links viram só o último nome (`/tmp/licenca/x.woff2` -> `x.woff2`); depois cada
+    argumento é partido em espaço, `=`, `:` e `,` e cada pedaço é conferido."""
+    if not argv:
+        return False
+    if Path(argv[0]).name in SHELLS or any(c in x for x in argv for c in "|;&`$"):
+        return True
+    for x in argv:
+        x = re.sub(r"[^\s=:,]*/[^\s=:,]*", lambda m: m.group(0).rstrip("/").rsplit("/", 1)[-1], x)
+        for t in (t for t in re.split(r"[\s=:,]+", x.lower()) if t):
+            if (t.startswith(("--accept", "--agree")) or t in ("--yes", "accept", "agree")
+                    or re.fullmatch(r"-[a-z]*y[a-z]*", t) or "licen" in t):
+                return True
+    return False
 
 
 # ---------- conferências (cada uma devolve: achou, versão, detalhe) ----------
