@@ -1,5 +1,5 @@
 # Requisitos do readme-studio. Contrato: https://github.com/nathanramorim/requisitos-para-ia
-# (sdd/spec/contrato-requisitos.md, commit 5f63e02, vendorizado pelo skills.lock).
+# (sdd/spec/contrato-requisitos.md, tag v0.1.0, vendorizado pelo skills.lock).
 # Fontes: cabeçalhos PEP 723 dos scripts (requires-python >=3.9; o motor pede >=3.11), skill
 # readme-comercial (Chrome headless para conferir o banner; git para tags e remote) e README.
 # Homebrew, winget e apt nunca são pré-requisito: sem o gerenciador, a próxima receita vale.
@@ -52,7 +52,7 @@ obrigatorio = true
 depende_de = ["uv"]
 tamanho = "cerca de 60 MB"
 cache = "pasta de Pythons do uv (uv python dir): ~/.local/share/uv/python no macOS e no Linux, %APPDATA%\\uv\\python no Windows"
-checar = { comando = ["uv", "python", "find", ">=3.11"], versao_regex = "(3\\.\\d+)" }
+checar = { comando = ["uv", "python", "find", "--system", ">=3.11"], versao_regex = "(3\\.\\d+)" }
   [[requisito.receita]]
   comandos = [["uv", "python", "install", "3.12"]]
 

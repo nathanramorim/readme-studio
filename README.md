@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="versão" src="https://img.shields.io/badge/vers%C3%A3o-0.6.0-2563eb">
+  <img alt="versão" src="https://img.shields.io/badge/vers%C3%A3o-0.6.1-2563eb">
   <img alt="licença" src="https://img.shields.io/badge/licen%C3%A7a-MIT-16a34a">
   <img alt="Claude Code" src="https://img.shields.io/badge/Claude%20Code-plugin-7c3aed">
   <img alt="agy" src="https://img.shields.io/badge/agy-skill-06b6d4">
@@ -148,6 +148,7 @@ Com tema claro, também há desenhos prontos: `--ilustracao pastas|fluxo|termina
 
 | Versão | Novidades |
 |---|---|
+| **0.6.1** | O motor de requisitos fica fixo na tag **v0.1.0** do requisitos-para-ia (trava mais rígida, instruções do Windows em PowerShell e cmd, `--arquivo` depois do subcomando) e o Python é conferido com `uv python find --system`, para não confundir com o Python do próprio `uv run`. |
 | **0.6.0** | **Requisitos multiplataforma**: o readme-studio usa o motor [requisitos-para-ia](https://github.com/nathanramorim/requisitos-para-ia) (`requisitos.toml` + `bootstrap.sh`/`bootstrap.ps1`) e todo README gerado também: o bloco "Cole isto na sua IA" é o que `requisitos.py prompt` imprime, com caminho para Windows e para macOS/Linux, e o Homebrew deixa de ser pré-requisito. O verificador falha sem esses caminhos, com Homebrew no bloco ou sem `requisitos.toml`. CI em Ubuntu, Windows e macOS. |
 | **0.5.0** | **Prompt de instalação para a IA**: todo README de projeto com dependências ganha, em Requisitos, um bloco "Cole isto na sua IA" que usa o script de requisitos do projeto (`checar` e `instalar`), nunca um prompt genérico. Novo `scripts/requisitos.py` (também é a base para outros projetos) e o verificador confere o bloco. |
 | **0.4.0** | Seção **Requisitos** obrigatória em todo README (onde roda, programas, downloads, contas, máquina, licenças e o que você fornece), levantada do projeto e nunca inventada, e o `verificar_readme.py`, que confere a seção. |
