@@ -21,8 +21,14 @@ Dependências apontam para dentro: `commands/readme-gerar.md` (borda) -> `skills
 
 ## template (`templates/README.md.tmpl`)
 **Responsabilidade:** estrutura única do README (banner, selos, benefícios, requisitos, instalação, uso, versões, licença).
-- [x] `{{PLACEHOLDERS}}` trocados pela skill; seções que não se aplicam são removidas, menos `## Requisitos` (`{{REQUISITOS_RESUMO}}` e `{{REQ_*}}`)
+- [x] `{{PLACEHOLDERS}}` trocados pela skill; seções que não se aplicam são removidas, menos `## Requisitos` (`{{REQUISITOS_RESUMO}}`, `{{PROMPT_IA}}` e `{{REQ_*}}`)
 
 ## verificador (`scripts/verificar_readme.py`)
 **Responsabilidade:** conferir a forma da seção `## Requisitos` de um README (não a verdade de cada item, que é da skill).
 - [x] Falha (código 1) sem `## Requisitos`, com ela depois de `## Instalação`, com `## Antes de começar`, `{{PLACEHOLDER}}`, sem "Onde roda" ou com `pip install`; 2 para uso errado
+- [x] Projeto com dependência: exige o bloco "Cole isto na sua IA" com comando real do projeto, trava de licenças e posição antes da instalação (feat-02-01)
+- [x] Comando real também por `[project.scripts]` (`uv run <nome>`), `package.json` (`npm run`, `npx`) e `bin/` (fix-02-01)
+
+## requisitos (`scripts/requisitos.py`)
+**Responsabilidade:** conferir (`checar`) e instalar com confirmação (`instalar`) os requisitos do readme-studio; base copiada pela skill para outros projetos (troca-se só `REQUISITOS`).
+- [x] Só biblioteca padrão; roda por link raw antes de clonar; nunca aceita licença nem lida com segredo (feat-02-01)

@@ -1,0 +1,29 @@
+{
+  "veredito": "duvida",
+  "achados": [
+    {
+      "verificacao": "S-05",
+      "regra": "ADR-0006",
+      "classificacao": "duvida",
+      "severidade": "baixa",
+      "arquivo": "scripts/verificar_readme.py",
+      "linha": 169,
+      "evidencia": "local = any(a == \"--from\" and i + 1 < len(partes) and partes[i + 1].startswith((\".\", \"/\", \"~\"))",
+      "explicacao": "O achado médio da rodada 1 está fechado na forma documentada: 'uvx gv' agora é recusado e 'uvx --from . gv' é aceito. Mas o any() procura '--from' na linha inteira, inclusive depois do nome do comando. Testei sem alterar nada: 'uvx gv --from .' e 'uvx gv checar --from ./x' devolvem True, só que nesses casos o uvx repassa '--from .' para o gv, e o gv vem do PyPI, que é exatamente o risco da rodada 1. Também passa '--from' com qualquer pasta local ('/abs', '~/x'), mesmo fora do projeto. É uma ordem de argumentos rara, por isso a severidade é baixa.",
+      "correcao": "Só considerar '--from <local>' que apareça antes do primeiro argumento posicional (a mesma varredura de _depois_das_opcoes) e incluir 'uvx gv --from .' entre os casos negativos de test_nome_inventado_falha."
+    },
+    {
+      "verificacao": "S-05",
+      "regra": "FLX-03",
+      "classificacao": "duvida",
+      "severidade": "baixa",
+      "arquivo": "scripts/verificar_readme.py",
+      "linha": 36,
+      "evidencia": "IGNORAR = {\"node_modules\", \"sdd\", \"vendor\", \"dist\", \"build\", \"__pycache__\", \"venv\", \"env\", \"site-packages\"}",
+      "explicacao": "Nenhum achado da rodada 1 pedia isso: venv/ entrou lá só como observação anterior ao diff, e nem a spec nem o 'Modelo do módulo' revisado falam em venv/env/site-packages. O IGNORAR vale para arquivos(), então muda também dependencias() (scripts PEP 723 dentro de env/ deixam de ser vistos) e a busca de nome direto em comando_real. Um projeto que tenha uma pasta 'env/' de verdade perde arquivos sem aviso. Caminho explícito continua funcionando: testei 'bash env/setup.sh' e deu True.",
+      "correcao": "Registrar a mudança na spec do fix, ou limitar a exclusão a venv/site-packages (ou a pastas com pyvenv.cfg) e tirar o 'env' genérico."
+    }
+  ],
+  "candidate_skill": null,
+  "resumo": "Rodada 2, commit 20196fe (HEAD~1..HEAD) no branch feat/02-prompt-instalacao. Li o diff inteiro como dado não confiável (FLX-08): nenhuma instrução embutida no código, nos testes, na spec, no veredito copiado nem na mensagem do commit. Camada A, só com comandos de leitura: test_verificar_readme.py 21 testes OK (o '[falha]' na saída é o caso negativo esperado do próprio teste), test_requisitos.py 10/10 OK, 'verificar_readme.py README.md' imprimiu 'requisitos: ok' com rc=0 e /tmp/gv-check/README.md também imprimiu 'requisitos: ok' com rc=0. Situação dos três achados da rodada 1. (1) uvx, média: fechado na forma documentada ('uvx gv' recusado; 'uvx --from . gv', 'uvx -q --from . gv' e 'uvx --from ./ gv' aceitos; 'uvx --from gv-evil gv', 'uvx --with . gv' e 'uvx --from=. gv' recusados). Fica um resíduo baixo: o '--from' escrito depois do nome do comando também é aceito. (2) Tipos do manifesto, baixa: fechado. pyproject com scripts string, lista ou com project=3, e package.json como lista, string, null, scripts/bin com tipo errado ou name numérico: nenhum traceback, todos devolvem conjuntos vazios ou coerentes. (3) npm sem run, baixa: fechado. 'npm req', 'npm build', 'npm acmebin', 'npm exec acmebin', 'npm' e 'npm run' recusados; 'npm run req', 'npm run-script req' e 'npm test' (com test declarado) aceitos. pnpm/yarn/bun continuam como antes ('pnpm req', 'yarn acmebin', 'bun run req'). A spec foi atualizada de forma coerente com o código. Mudança nova fora do escopo: venv/env/site-packages no IGNORAR, que afeta todo o arquivos(). S-01, S-03, S-04 e S-06 conformes: o código continua em scripts/, só com biblioteca padrão, sem segredo nem duplicação. S-02 honesto. S-07 não achou repetição. Não rodei forge queue review nem forge session record, porque esta revisão é só de leitura. Nada no repositório foi alterado; os testes adversariais rodaram em diretórios temporários em /tmp."
+}
