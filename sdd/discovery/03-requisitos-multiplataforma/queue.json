@@ -1,8 +1,8 @@
 {
   "feature_id": "feat-03",
-  "branch": "feat/03-requisitos-multiplataforma",
+  "branch": "fix/03-01-motor-v0.1.0",
   "spec_status": "reviewed",
-  "updated_at": "2026-11-19T06:10:37Z",
+  "updated_at": "2026-11-19T10:38:27Z",
   "items": [
     {
       "task_id": "feat-03-01-requisitos-multiplataforma",
@@ -28,7 +28,29 @@
       "governance_verdict": {
         "veredito": "conforme",
         "achados": [],
-        "resumo": "Rodada 2: revisei só o delta 188b011..5c50385 (HEAD 5c50385), sem alterar nada no repositório. A Camada A passou inteira: test_verificar_readme OK; test_requisitos OK (6 testes); `requisitos.py validar` saiu 0 com macos, linux e windows cobertos; `checar --json` saiu 0 com JSON válido; `verificar_readme.py README.md` imprimiu 'requisitos: ok'; o bloco do README continua idêntico à saída de `requisitos.py prompt`; as 3 cópias do motor têm o mesmo sha256 do commit 5f63e02; o forge gate não apontou falha; e o CI do PR #5 no novo commit está verde em ubuntu, windows e macos. Os 5 achados da rodada 1 foram resolvidos. (1) A regex do Homebrew agora pega qualquer menção a brew ou homebrew; em /tmp, `brew upgrade`, `brew tap` e 'tenha o brew' falham, e há teste para cada um. (2) O bootstrap agora precisa ser rodado de fato (`powershell[.exe] ... -File \u003ccaminho\u003e` ou `sh|bash \u003ccaminho\u003e`), e o caminho rodado tem que existir. Em /tmp falham: o bootstrap de fachada, o citado como argumento de outro comando, o com echo, o ausente ao lado do requisitos.py, o que só existe em outra pasta e um nome que só termina parecido (mybootstrap.ps1). (3) A checagem de macOS/Linux/Windows ignora o bloco; uma tabela sem nenhum sistema agora falha, e o teste mantém o bloco do motor intacto. (4) O `instalar` exige `uv run \u003crequisitos.py que existe\u003e [--arquivo X] instalar`; echo, script inventado e `checar instalar` falham. (5) O requisitos.toml ganhou a receita `zypper install chromium`, de modo que o README e a receita agora batem. Não encontrei falso positivo nos blocos que o motor gera: o bloco sem `repo` e com `repo` passam, assim como `scripts\\bootstrap.ps1`, `powershell.exe`, `sh ./scripts/bootstrap.sh`, `bash` e `--arquivo`. Ficam dois limites menores, que não pesam no veredito porque o motor nunca gera essas formas e a skill manda colar o bloco sem editar: `pwsh -File` e `./scripts/bootstrap.sh` rodado direto são rejeitados. A varredura FLX-08 do delta não achou instrução embutida; o JSON do veredito anterior está gravado no repositório como dado. Nenhum achado em S-01 a S-07."
+        "resumo": "Rodada 2: revisei só o delta 188b011..5c50385 (HEAD 5c50385), sem alterar nada no repositório. A Camada A passou inteira: test_verificar_readme OK; test_requisitos OK (6 testes); `requisitos.py validar` saiu 0 com macos, linux e windows cobertos; `checar --json` saiu 0 com JSON válido; `verificar_readme.py README.md` imprimiu 'requisitos: ok'; o bloco do README continua idêntico à saída de `requisitos.py prompt`; as 3 cópias do motor têm o mesmo sha256 do commit 5f63e02; o forge gate não apontou falha; e o CI do PR #5 no novo commit está verde em ubuntu, windows e macos. Os 5 achados da rodada 1 foram resolvidos. (1) A regex do Homebrew agora pega qualquer menção a brew ou homebrew; em /tmp, `brew upgrade`, `brew tap` e 'tenha o brew' falham, e há teste para cada um. (2) O bootstrap agora precisa ser rodado de fato (`powershell[.exe] ... -File <caminho>` ou `sh|bash <caminho>`), e o caminho rodado tem que existir. Em /tmp falham: o bootstrap de fachada, o citado como argumento de outro comando, o com echo, o ausente ao lado do requisitos.py, o que só existe em outra pasta e um nome que só termina parecido (mybootstrap.ps1). (3) A checagem de macOS/Linux/Windows ignora o bloco; uma tabela sem nenhum sistema agora falha, e o teste mantém o bloco do motor intacto. (4) O `instalar` exige `uv run <requisitos.py que existe> [--arquivo X] instalar`; echo, script inventado e `checar instalar` falham. (5) O requisitos.toml ganhou a receita `zypper install chromium`, de modo que o README e a receita agora batem. Não encontrei falso positivo nos blocos que o motor gera: o bloco sem `repo` e com `repo` passam, assim como `scripts\\bootstrap.ps1`, `powershell.exe`, `sh ./scripts/bootstrap.sh`, `bash` e `--arquivo`. Ficam dois limites menores, que não pesam no veredito porque o motor nunca gera essas formas e a skill manda colar o bloco sem editar: `pwsh -File` e `./scripts/bootstrap.sh` rodado direto são rejeitados. A varredura FLX-08 do delta não achou instrução embutida; o JSON do veredito anterior está gravado no repositório como dado. Nenhum achado em S-01 a S-07."
+      }
+    },
+    {
+      "task_id": "fix-03-01-motor-v0.1.0",
+      "title": "Fix 03-01: motor de requisitos fixo na tag v0.1.0",
+      "spec_path": "sdd/discovery/03-requisitos-multiplataforma/fixes/fix-03-01-motor-v0.1.0.md",
+      "status": "approved",
+      "rules": [
+        "ARQ-04",
+        "ARQ-06",
+        "DUP-01",
+        "TST-01",
+        "TST-02",
+        "SEG-04",
+        "FLX-07"
+      ],
+      "skills_used": [],
+      "attempts": 1,
+      "governance_verdict": {
+        "veredito": "conforme",
+        "achados": [],
+        "resumo": "Camada A conferida numa cópia temporária do head ef0584e (igual ao head do PR #6). Os 8 critérios passam: sha256 das cópias = tag v0.1.0 = skills.lock; ref v0.1.0 e commit 93abe08; validar 0 (6 requisitos, 3 sistemas); test_requisitos e test_verificar_readme 0; verificar_readme 'requisitos: ok' e bloco do prompt literal no README (prompt da v0.1.0 byte a byte igual ao do 5f63e02, verificador e template aceitam; teste novo cobre `instalar --arquivo`); `--system` presente (o uv ainda acha Pythons gerenciados por ele, então `uv python install 3.12` satisfaz a checagem); versão 0.6.1 no plugin.json, selo, tabela e history.md; CI verde em ubuntu, windows e macos. Camada B: S-01 a S-07 sem achados; SKILL.md bate com o código da v0.1.0. Observação: status.md da iniciativa cabe ao fechamento."
       }
     }
   ]
