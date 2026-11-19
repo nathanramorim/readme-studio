@@ -111,7 +111,7 @@ class TestComandosDeclarados(Base):
     def test_venv_nao_conta_mas_env_conta(self):
         (self.raiz / "venv" / "bin").mkdir(parents=True)
         (self.raiz / "venv" / "bin" / "pip").write_text("x", encoding="utf-8")
-        self.assertTrue(any("comando real" in x for x in self.erros(readme(bloco=self.bloco("pip checar"))))
+        self.assertTrue(any("comando real" in x for x in self.erros(readme(bloco=self.bloco("pip checar")))))
         (self.raiz / "env" / "bin").mkdir(parents=True)
         (self.raiz / "env" / "bin" / "acme").write_text("x", encoding="utf-8")
         self.assertEqual(self.erros(readme(bloco=self.bloco("acme checar"))), [])
