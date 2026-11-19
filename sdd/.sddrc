@@ -1,0 +1,12 @@
+{
+  "project": "readme-studio",
+  "version": "4.9.1-beta",
+  "agents": ["claude", "gemini"],
+  "telemetry": {
+    "enabled": true,
+    "anonymous": true,
+    "endpoint": "local"
+  },
+  "lang": "pt-BR",
+  "naming_convention": "sequencial"
+}
