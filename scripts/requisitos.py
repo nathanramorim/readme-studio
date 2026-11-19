@@ -38,7 +38,8 @@ PROIBIDO = ("--accept", "--agree", "--yes", "yes |", "licen")
 
 
 def proibido(argv: list[str]) -> bool:
-    texto = " " + " ".join(argv).lower() + " "
+    """O comando aceitaria algo por alguém? Caminhos e links (com `/`) não contam."""
+    texto = " " + " ".join(x for x in argv if "/" not in x).lower() + " "
     return any(p in texto for p in PROIBIDO) or " -y " in texto
 
 

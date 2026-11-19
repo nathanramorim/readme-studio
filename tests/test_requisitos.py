@@ -117,6 +117,7 @@ class TestInstalar(unittest.TestCase):
                     self.assertFalse(req.proibido(argv), argv)
         self.assertTrue(req.proibido(["xcodebuild", "-license", "accept"]))
         self.assertTrue(req.proibido(["apt-get", "install", "-y", "x"]))
+        self.assertFalse(req.proibido(["curl", "-o", "/tmp/licenca/x.woff2", "https://exemplo/x"]))  # caminho não conta
 
     def test_comando_proibido_e_recusado(self):
         item = {"id": "x", "nome": "X", "obrigatorio": True, "conferir": lambda: (False, "", ""),
