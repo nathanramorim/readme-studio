@@ -33,7 +33,7 @@ ARQ_DEPENDENCIA = ("pyproject.toml", "package.json", "Brewfile", "requirements.t
                    "Cargo.toml", "Gemfile", "Dockerfile", "uv.lock")
 CMD_DEPENDENCIA = re.compile(r"\b(brew install|npx |uvx |uv run|npm (i|install)\b|pnpm |playwright install)")
 PASSO_INSTALACAO = re.compile(r"(plugin marketplace add|plugin install|git clone|brew install|npm (i|install)\b)")
-IGNORAR = {"node_modules", "sdd", "vendor", "dist", "build", "__pycache__"}
+IGNORAR = {"node_modules", "sdd", "vendor", "dist", "build", "__pycache__", "venv", "env", "site-packages"}
 EXT_SCRIPT = r"\.(?:py|sh|js|mjs|cjs|ts)"
 
 
@@ -103,7 +103,9 @@ def _scripts_pyproject(raiz: Path) -> set[str]:
     texto = arq.read_text(encoding="utf-8", errors="ignore")
     try:
         import tomllib
-        return set(((tomllib.loads(texto).get("project") or {}).get("scripts") or {}).keys())
+        projeto = tomllib.loads(texto).get("project")
+        scripts = projeto.get("scripts") if isinstance(projeto, dict) else None
+        return set(scripts) if isinstance(scripts, dict) else set()
     except ImportError:  # Python < 3.11: lê só a seção
         m = re.search(r"^\[project\.scripts\]\s*$(.*?)(?=^\[|\Z)", texto, flags=re.MULTILINE | re.DOTALL)
         return set(re.findall(r"^\s*\"?([\w.-]+)\"?\s*=", m.group(1), flags=re.MULTILINE)) if m else set()
@@ -119,6 +121,8 @@ def _package_json(raiz: Path) -> tuple[set[str], set[str]]:
     try:
         dados = json.loads(arq.read_text(encoding="utf-8"))
     except (OSError, ValueError):
+        return set(), set()
+    if not isinstance(dados, dict):
         return set(), set()
     scripts = set((dados.get("scripts") or {}).keys()) if isinstance(dados.get("scripts"), dict) else set()
     b = dados.get("bin")
@@ -159,12 +163,20 @@ def comando_real(comando: str, raiz: Path, todos: list[Path], nomes: dict[str, s
     if not partes:
         return False
     executaveis = nomes["py"] | nomes["bin"] | nomes["npm_bins"]
-    if partes[:2] == ["uv", "run"] or partes[0] == "uvx":
-        return _depois_das_opcoes(partes[2:] if partes[0] == "uv" else partes[1:]) in executaveis
-    if partes[0] in ("npm", "pnpm", "yarn", "bun"):
+    if partes[:2] == ["uv", "run"]:
+        return _depois_das_opcoes(partes[2:]) in executaveis
+    if partes[0] == "uvx":  # sem --from local, o uvx busca um pacote de mesmo nome no PyPI
+        local = any(a == "--from" and i + 1 < len(partes) and partes[i + 1].startswith((".", "/", "~"))
+                    for i, a in enumerate(partes))
+        return local and _depois_das_opcoes(partes[1:]) in executaveis
+    if partes[0] == "npm":  # o npm só roda script do projeto com run (ou os embutidos test/start)
+        if len(partes) > 1 and partes[1] in ("run", "run-script"):
+            return _depois_das_opcoes(partes[2:]) in nomes["npm_scripts"]
+        return len(partes) > 1 and partes[1] in ("test", "start", "stop", "restart") and partes[1] in nomes["npm_scripts"]
+    if partes[0] in ("pnpm", "yarn", "bun"):
         resto = partes[2:] if len(partes) > 1 and partes[1] in ("run", "run-script") else partes[1:]
         alvo = _depois_das_opcoes(resto)
-        return alvo in nomes["npm_scripts"] or (partes[0] != "npm" and alvo in nomes["npm_bins"])
+        return alvo in nomes["npm_scripts"] or alvo in nomes["npm_bins"]
     if partes[0] == "npx":
         return _depois_das_opcoes(partes[1:]) in nomes["npm_bins"]
     return partes[0] in executaveis

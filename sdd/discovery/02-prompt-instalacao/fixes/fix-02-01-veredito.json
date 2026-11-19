@@ -1,0 +1,40 @@
+{
+  "veredito": "duvida",
+  "achados": [
+    {
+      "verificacao": "S-05",
+      "regra": "ADR-0006",
+      "classificacao": "duvida",
+      "severidade": "media",
+      "arquivo": "scripts/verificar_readme.py",
+      "linha": 162,
+      "evidencia": "if partes[:2] == [\"uv\", \"run\"] or partes[0] == \"uvx\":",
+      "explicacao": "uvx (uv tool run) resolve o nome no PyPI, num ambiente isolado; não usa o entry point do projeto. Testei sem alterar nada: 'uvx gv' devolve True só porque o pyproject declara gv, então um pacote de terceiros com o mesmo nome passaria como 'comando real do projeto'. A seção 'Modelo do módulo' da spec cita 'uvx <nome>', então isto não fere o FLX-03; é um conflito entre a spec e a intenção da regra, e quem decide é o humano.",
+      "correcao": "Aceitar uvx só com '--from <projeto>' (o _depois_das_opcoes já devolve 'gv' para 'uvx --from . gv') ou tirar uvx da lista de executáveis."
+    },
+    {
+      "verificacao": "S-05",
+      "regra": "TST-02",
+      "classificacao": "duvida",
+      "severidade": "baixa",
+      "arquivo": "scripts/verificar_readme.py",
+      "linha": 106,
+      "evidencia": ".get(\"scripts\") or {}).keys())",
+      "explicacao": "Um manifesto com o tipo errado derruba o verificador com traceback em vez de dar um erro tratado. Testei: 'scripts = \"bad\"' em [project] lança AttributeError, e um package.json cujo topo é uma lista também lança AttributeError em dados.get (linha 123). Os except só pegam ImportError e ValueError, então o código de saída fica ambíguo frente ao contrato 1/2.",
+      "correcao": "Conferir isinstance(dict) antes de .keys()/.get() no pyproject e no package.json, e devolver set() quando o tipo estiver errado."
+    },
+    {
+      "verificacao": "S-05",
+      "regra": "ADR-0006",
+      "classificacao": "duvida",
+      "severidade": "baixa",
+      "arquivo": "scripts/verificar_readme.py",
+      "linha": 164,
+      "evidencia": "if partes[0] in (\"npm\", \"pnpm\", \"yarn\", \"bun\"):",
+      "explicacao": "'npm req' devolve True quando 'req' está em scripts. Só que o npm não roda script arbitrário sem 'run'; só os embutidos (test, start...) funcionam assim. O comando aceito não roda de verdade.",
+      "correcao": "No npm, exigir 'run'/'run-script' (ou um embutido como test/start) para aceitar um nome de npm_scripts."
+    }
+  ],
+  "candidate_skill": null,
+  "resumo": "Commit af3b3db no branch feat/02-prompt-instalacao. Revisei o diff inteiro, inclusive os trechos de queue.json e status.md. Camada A, só com comandos de leitura: test_verificar_readme.py OK (o '[falha]' na saída é o caso negativo esperado do próprio teste), test_requisitos.py 10/10, 'verificar_readme.py README.md' imprimiu 'requisitos: ok' e o caso real /tmp/gv-check/README.md (gerador-videos, 'uv run gv requisitos checar') imprimiu 'requisitos: ok'; os critérios 1 a 3 da spec foram atendidos. Casos adversariais, sem alterar nada: recusados 'uv run something-not-declared', 'npm run missing', 'npx cowsay', 'npx create-react-app', 'uv run --with gv other', 'npm install', 'bun x cowsay'; aceitos 'uv run gv', 'uv run -- gv', 'npx -y acmebin', 'yarn acmebin', 'pnpm req'. A dúvida média é o 'uvx <nome>': ele aceita um pacote do PyPI com o mesmo nome do entry point. A spec permite isso, mas vai contra a intenção da regra, e quem decide é o humano. As dúvidas baixas são o traceback com manifesto do tipo errado e o 'npm <script>' sem 'run'. Observação anterior a este diff, não é regressão: executáveis de uma pasta venv/ não oculta (venv/bin/python, pip) já contavam como nome direto, e agora contam também em 'uv run python'. S-01, S-03, S-04 e S-06 conformes: o código continua em scripts/, só usa a biblioteca padrão (json, tomllib com fallback por regex na 3.9/3.10, testado com mock), não há segredo nem duplicação. S-02: o 'O que já existe' é honesto (estende comando_real). S-07 não achou repetição. FLX-08: nenhuma instrução embutida no diff, nos testes, na spec nem na mensagem do commit; o item da fila foi criado como 'queued', sem estado de revisão pré-definido. Não rodei forge queue review nem forge session record, porque esta revisão é só de leitura."
+}

@@ -104,6 +104,16 @@ class TestComandosDeclarados(Base):
         with mock.patch.dict(sys.modules, {"tomllib": None}):
             self.assertEqual(ver._scripts_pyproject(self.raiz), {"gv", "gr"})
 
+    def test_uvx_so_com_from_local(self):
+        (self.raiz / "pyproject.toml").write_text('[project.scripts]\ngv = "a:main"\n', encoding="utf-8")
+        self.assertEqual(self.erros(readme(bloco=self.bloco("uvx --from . gv checar"))), [])
+
+    def test_manifesto_com_tipo_errado_nao_quebra(self):
+        (self.raiz / "pyproject.toml").write_text('[project]\nscripts = "ruim"\n', encoding="utf-8")
+        (self.raiz / "package.json").write_text('["lista"]', encoding="utf-8")
+        e = self.erros(readme(bloco=self.bloco("uv run gv checar")))
+        self.assertTrue(any("comando real" in x for x in e), e)
+
     def test_npm_run_script(self):
         (self.raiz / "package.json").write_text('{"name": "acme", "scripts": {"requisitos": "node r.js"}}', encoding="utf-8")
         self.assertEqual(self.erros(readme(bloco=self.bloco("npm run requisitos -- checar"))), [])
@@ -127,7 +137,8 @@ class TestComandosDeclarados(Base):
     def test_nome_inventado_falha(self):
         (self.raiz / "pyproject.toml").write_text('[project.scripts]\ngv = "acme.cli:main"\n', encoding="utf-8")
         (self.raiz / "package.json").write_text('{"name": "acme", "scripts": {"a": "x"}, "bin": {"b": "c.js"}}', encoding="utf-8")
-        for cmd in ("uv run inventado checar", "npm run inventado", "npx inventado", "inventado checar", "uvx inventado"):
+        for cmd in ("uv run inventado checar", "npm run inventado", "npx inventado", "inventado checar", "uvx inventado",
+                    "uvx gv checar", "npm a"):
             e = self.erros(readme(bloco=self.bloco(cmd)))
             self.assertTrue(any("comando real" in x for x in e), (cmd, e))
 
