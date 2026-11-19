@@ -121,7 +121,8 @@ class TestInstalar(unittest.TestCase):
         self.assertTrue(req.proibido(["x", "--accept-license=/dev/null"]))
         self.assertTrue(req.proibido(["sh", "-c", "yes | /usr/bin/x"]))
         for argv in (["sh", "-c", "yes|/usr/bin/x"], ["/bin/bash", "-c", "x"], ["x", "--accept-license:/a"],
-                     ["x", "--accept-license,/a"], ["x", "-yq"], ["x", "--license=accept"], ["x", "--agree-tos"]):
+                     ["x", "--accept-license,/a"], ["x", "-yq"], ["x", "--license=accept"], ["x", "--agree-tos"],
+                     ["x", "--accept/x"], ["x", "-ylicen/s"], ["x", "--yes"]):
             self.assertTrue(req.proibido(argv), argv)
         for argv in (["brew", "install", "uv"], ["uv", "python", "install"], ["x", "--out=/tmp/licenca/y"],
                      ["curl", "-fsSL", "--create-dirs", "-o", "/a/b.woff2", "https://cdn.exemplo/c/b.woff2"]):

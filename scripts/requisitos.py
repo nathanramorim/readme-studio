@@ -40,14 +40,16 @@ SHELLS = {"sh", "bash", "zsh", "fish", "dash", "ksh"}
 def proibido(argv: list[str]) -> bool:
     """O comando aceitaria algo por alguém (ou passaria por um shell, onde isso não dá para conferir)?
 
-    Caminhos e links viram só o último nome (`/tmp/licenca/x.woff2` -> `x.woff2`); depois cada
+    Caminhos e links (começam com `/`, `./`, `~` ou `esquema://`) viram só o último nome
+    (`/tmp/licenca/x.woff2` -> `x.woff2`); depois cada
     argumento é partido em espaço, `=`, `:` e `,` e cada pedaço é conferido."""
     if not argv:
         return False
     if Path(argv[0]).name in SHELLS or any(c in x for x in argv for c in "|;&`$"):
         return True
     for x in argv:
-        x = re.sub(r"[^\s=:,]*/[^\s=:,]*", lambda m: m.group(0).rstrip("/").rsplit("/", 1)[-1], x)
+        x = re.sub(r"(?:[A-Za-z][\w+.-]*://|~|\.{0,2}/)[^\s=:,]*",
+                   lambda m: m.group(0).rstrip("/").rsplit("/", 1)[-1], x)
         for t in (t for t in re.split(r"[\s=:,]+", x.lower()) if t):
             if (t.startswith(("--accept", "--agree")) or t in ("--yes", "accept", "agree")
                     or re.fullmatch(r"-[a-z]*y[a-z]*", t) or "licen" in t):
