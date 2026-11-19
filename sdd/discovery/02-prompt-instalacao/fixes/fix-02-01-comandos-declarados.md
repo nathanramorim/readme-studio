@@ -9,7 +9,7 @@
 - **Evidência:** `uv run scripts/verificar_readme.py` no README e no `pyproject.toml` da branch `feat/aa40-prompt-instalacao` do gerador-videos → `[falha] o bloco 'Cole isto na sua IA' não usa nenhum comando real do projeto`.
 
 ## Modelo do módulo
-`enxuto`: o verificador continua sem estado. Ganha a leitura dos nomes declarados no projeto (`[project.scripts]`, `package.json` `bin` e `scripts`, executáveis de `bin/`) e o reconhecimento de `uv run <nome>`, `uvx --from <pasta local> <nome>` (sem `--from` local o uvx busca no PyPI, então não conta), `npm run <script>` (ou os embutidos `npm test`/`npm start`), `npx <bin>`, `pnpm`/`yarn`/`bun` e `<nome>` direto. Manifesto com tipo errado é ignorado, sem traceback.
+`enxuto`: o verificador continua sem estado. Ganha a leitura dos nomes declarados no projeto (`[project.scripts]`, `package.json` `bin` e `scripts`, executáveis de `bin/`) e o reconhecimento de `uv run <nome>`, `uvx --from <pasta local> <nome>` (sem `--from` local o uvx busca no PyPI, então não conta), `npm run <script>` (ou os embutidos `npm test`/`npm start`), `npx <bin>`, `pnpm`/`yarn`/`bun` e `<nome>` direto. O `--from` só vale antes do nome do comando. Manifesto com tipo errado é ignorado, sem traceback. A busca de executáveis e de scripts ignora `venv/` e `site-packages/` (ambientes Python não ocultos, cujos `bin/python`/`pip` não são comandos do projeto).
 
 ## Decisões do projeto aplicadas
 ADR-0006 (o bloco usa um comando real do projeto), ADR-0003 (só biblioteca padrão: `tomllib` quando houver, senão leitura simples da seção), Regra 6 (nome inventado continua falhando), Regra 8.

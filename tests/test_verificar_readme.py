@@ -108,6 +108,14 @@ class TestComandosDeclarados(Base):
         (self.raiz / "pyproject.toml").write_text('[project.scripts]\ngv = "a:main"\n', encoding="utf-8")
         self.assertEqual(self.erros(readme(bloco=self.bloco("uvx --from . gv checar"))), [])
 
+    def test_venv_nao_conta_mas_env_conta(self):
+        (self.raiz / "venv" / "bin").mkdir(parents=True)
+        (self.raiz / "venv" / "bin" / "pip").write_text("x", encoding="utf-8")
+        self.assertTrue(any("comando real" in x for x in self.erros(readme(bloco=self.bloco("pip checar"))))
+        (self.raiz / "env" / "bin").mkdir(parents=True)
+        (self.raiz / "env" / "bin" / "acme").write_text("x", encoding="utf-8")
+        self.assertEqual(self.erros(readme(bloco=self.bloco("acme checar"))), [])
+
     def test_manifesto_com_tipo_errado_nao_quebra(self):
         (self.raiz / "pyproject.toml").write_text('[project]\nscripts = "ruim"\n', encoding="utf-8")
         (self.raiz / "package.json").write_text('["lista"]', encoding="utf-8")
@@ -138,7 +146,7 @@ class TestComandosDeclarados(Base):
         (self.raiz / "pyproject.toml").write_text('[project.scripts]\ngv = "acme.cli:main"\n', encoding="utf-8")
         (self.raiz / "package.json").write_text('{"name": "acme", "scripts": {"a": "x"}, "bin": {"b": "c.js"}}', encoding="utf-8")
         for cmd in ("uv run inventado checar", "npm run inventado", "npx inventado", "inventado checar", "uvx inventado",
-                    "uvx gv checar", "npm a"):
+                    "uvx gv checar", "npm a", "uvx gv --from .", "uvx gv checar --from ./x"):
             e = self.erros(readme(bloco=self.bloco(cmd)))
             self.assertTrue(any("comando real" in x for x in e), (cmd, e))
 

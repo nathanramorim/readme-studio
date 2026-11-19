@@ -33,7 +33,7 @@ ARQ_DEPENDENCIA = ("pyproject.toml", "package.json", "Brewfile", "requirements.t
                    "Cargo.toml", "Gemfile", "Dockerfile", "uv.lock")
 CMD_DEPENDENCIA = re.compile(r"\b(brew install|npx |uvx |uv run|npm (i|install)\b|pnpm |playwright install)")
 PASSO_INSTALACAO = re.compile(r"(plugin marketplace add|plugin install|git clone|brew install|npm (i|install)\b)")
-IGNORAR = {"node_modules", "sdd", "vendor", "dist", "build", "__pycache__", "venv", "env", "site-packages"}
+IGNORAR = {"node_modules", "sdd", "vendor", "dist", "build", "__pycache__", "venv", "site-packages"}
 EXT_SCRIPT = r"\.(?:py|sh|js|mjs|cjs|ts)"
 
 
@@ -166,9 +166,11 @@ def comando_real(comando: str, raiz: Path, todos: list[Path], nomes: dict[str, s
     if partes[:2] == ["uv", "run"]:
         return _depois_das_opcoes(partes[2:]) in executaveis
     if partes[0] == "uvx":  # sem --from local, o uvx busca um pacote de mesmo nome no PyPI
-        local = any(a == "--from" and i + 1 < len(partes) and partes[i + 1].startswith((".", "/", "~"))
-                    for i, a in enumerate(partes))
-        return local and _depois_das_opcoes(partes[1:]) in executaveis
+        nome = _depois_das_opcoes(partes[1:])
+        antes = partes[1:partes.index(nome)] if nome else []  # só opções antes do nome valem para o uvx
+        local = any(a == "--from" and i + 1 < len(antes) and antes[i + 1].startswith((".", "/", "~"))
+                    for i, a in enumerate(antes))
+        return local and nome in executaveis
     if partes[0] == "npm":  # o npm só roda script do projeto com run (ou os embutidos test/start)
         if len(partes) > 1 and partes[1] in ("run", "run-script"):
             return _depois_das_opcoes(partes[2:]) in nomes["npm_scripts"]
