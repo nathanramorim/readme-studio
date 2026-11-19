@@ -1,0 +1,295 @@
+# Exemplo fictício (acme): uma receita que mostra cada particularidade que o motor cobre.
+# Contrato: sdd/spec/contrato-requisitos.md. Nada aqui é de um projeto real.
+versao = 1
+
+[projeto]
+nome = "acme-skill"
+script = "scripts/requisitos.py"
+incluir = ["skills/narrador/requisitos.toml"]   # receitas de outras skills entram juntas
+
+# Python fixo por plataforma: 3.12, exceto Windows arm64 (3.11 por causa de uma wheel)
+[[requisito]]
+id = "python"
+descricao = "Python do projeto, instalado pelo uv"
+tipo = "programa"
+obrigatorio = true
+checar = { comando = ["uv", "python", "find", "3.12"], regex = "3\\.12" }
+  [[requisito.receita]]
+  quando = { sistema = "windows", arch = "arm64" }
+  checar = { comando = ["uv", "python", "find", "3.11"], regex = "3\\.11" }
+  comandos = [["uv", "python", "install", "3.11"]]
+  [[requisito.receita]]
+  comandos = [["uv", "python", "install", "3.12"]]
+
+# Bibliotecas do sistema antes do extra Python (depende_de garante a ordem)
+[[requisito]]
+id = "espeak-ng"
+descricao = "Sintetizador fonético usado pelo extra de voz"
+tipo = "biblioteca"
+obrigatorio = false
+checar = { comando = ["espeak-ng", "--version"], versao_regex = "eSpeak NG text-to-speech: (\\d+\\.\\d+)" }
+  [[requisito.receita]]
+  quando = { sistema = "macos", gerenciador = "brew" }
+  comandos = [["brew", "install", "espeak-ng"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "apt" }
+  comandos = [["apt-get", "install", "espeak-ng"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "dnf" }
+  comandos = [["dnf", "install", "espeak-ng"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "pacman" }
+  comandos = [["pacman", "-S", "espeak-ng"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "zypper" }
+  comandos = [["zypper", "install", "espeak-ng"]]
+  [[requisito.receita]]
+  quando = { sistema = "windows" }
+  manual = "Instale o .msi oficial de https://github.com/espeak-ng/espeak-ng/releases (o instalador pede o seu aceite)."
+  path = ["C:/Program Files/eSpeak NG"]
+  [[requisito.receita]]
+  manual = "Instale o espeak-ng pelo gerenciador do seu sistema."
+
+[[requisito]]
+id = "compilador"
+descricao = "Compilador C/C++ para extensões sem wheel"
+tipo = "biblioteca"
+obrigatorio = false
+checar = { comando = ["cc", "--version"] }
+  [[requisito.receita]]
+  quando = { sistema = "windows" }
+  checar = { arquivo = "C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe" }
+  manual = "Instale o Build Tools do Visual Studio com a carga Desenvolvimento para desktop com C++ (a licença é aceita por você)."
+  [[requisito.receita]]
+  quando = { sistema = "macos" }
+  checar = { comando = ["xcode-select", "-p"] }
+  manual = "Rode você: xcode-select --install (a licença da Apple é aceita por você)."
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "apt" }
+  comandos = [["apt-get", "install", "build-essential"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "dnf" }
+  comandos = [["dnf", "install", "gcc", "gcc-c++", "make"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "pacman" }
+  comandos = [["pacman", "-S", "base-devel"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux" }
+  manual = "Instale gcc, g++ e make pelo gerenciador da sua distro."
+
+# Variantes de GPU escolhidas pela detecção (cuda, rocm, mps, cpu)
+[[requisito]]
+id = "motor-gpu"
+descricao = "PyTorch na variante certa para a sua placa"
+tipo = "pacote-python"
+obrigatorio = false
+depende_de = ["python", "compilador", "espeak-ng"]
+tamanho = "cpu 200 MB, cuda 3 GB"
+checar = { arquivo = ["{raiz}/.venv/lib/python3.12/site-packages/torch", "{raiz}/.venv/Lib/site-packages/torch"] }
+  [[requisito.receita]]
+  quando = { gpu = "cuda" }
+  comandos = [["uv", "sync", "--project", "{raiz}", "--extra", "cuda"]]
+  [[requisito.receita]]
+  quando = { gpu = "rocm", sistema = "linux" }
+  comandos = [["uv", "sync", "--project", "{raiz}", "--extra", "rocm"]]
+  [[requisito.receita]]
+  quando = { gpu = "rocm" }
+  nao_suportado = "ROCm só existe no Linux: use o Linux nativo ou a variante cpu."
+  [[requisito.receita]]
+  comandos = [["uv", "sync", "--project", "{raiz}", "--extra", "cpu"]]
+  nota = "mps (Apple Silicon) e cpu usam a mesma wheel."
+
+# Node com versão mínima e arquitetura certa (arm64 vs x64/Rosetta)
+[[requisito]]
+id = "node"
+descricao = "Node 22 ou mais novo, na arquitetura nativa"
+tipo = "programa"
+obrigatorio = false
+checar = { comando = ["node", "-p", "process.arch + ' ' + process.version"], versao_regex = "v(\\d+\\.\\d+\\.\\d+)", versao_minima = "22", procurar_em = ["/opt/homebrew/opt/node@22/bin"] }
+  [[requisito.receita]]
+  quando = { sistema = "macos", rosetta = true }
+  manual = "Este terminal roda em Rosetta: abra um terminal arm64 para o Node nativo."
+  [[requisito.receita]]
+  quando = { sistema = "macos", arch = "arm64", gerenciador = "brew" }
+  checar = { comando = ["node", "-p", "process.arch + ' ' + process.version"], regex = "^arm64 ", versao_regex = "v(\\d+\\.\\d+\\.\\d+)", versao_minima = "22", procurar_em = ["/opt/homebrew/opt/node@22/bin"] }
+  comandos = [["brew", "install", "node@22"]]
+  path = ["/opt/homebrew/opt/node@22/bin"]
+  [[requisito.receita]]
+  quando = { sistema = "macos", gerenciador = "brew" }
+  comandos = [["brew", "install", "node@22"]]
+  path = ["/usr/local/opt/node@22/bin"]
+  [[requisito.receita]]
+  quando = { sistema = "windows", gerenciador = "winget" }
+  comandos = [["winget", "install", "--id", "OpenJS.NodeJS.LTS", "-e"]]
+  [[requisito.receita]]
+  manual = "Instale o Node 22 LTS de https://nodejs.org (ou com fnm/nvm); o pacote da distro costuma ser antigo."
+
+# Navegador headless com cache por SO
+[[requisito]]
+id = "chromium"
+descricao = "Chromium headless do Playwright (render)"
+tipo = "download"
+obrigatorio = false
+depende_de = ["python"]
+tamanho = "570 MB"
+cache = "{cache}/ms-playwright"
+checar = { arquivo = ["{env:PLAYWRIGHT_BROWSERS_PATH}/chromium-*", "{cache}/ms-playwright/chromium-*"] }
+  [[requisito.receita]]
+  quando = { sistema = "linux" }
+  comandos = [["uv", "run", "--with", "playwright==1.65.2", "playwright", "install", "chromium"]]
+  nota = "No Linux o Chromium também pede bibliotecas do sistema: rode você sudo $(which uv) run --with playwright==1.65.2 playwright install-deps chromium"
+  [[requisito.receita]]
+  comandos = [["uv", "run", "--with", "playwright==1.65.2", "playwright", "install", "chromium"]]
+
+# Download grande (fontes) no cache de cada SO, com checksum opcional
+[[requisito]]
+id = "fonte-inter"
+descricao = "Fonte Inter (OFL) para o render"
+tipo = "download"
+obrigatorio = false
+tamanho = "30 KB"
+cache = "{cache}/acme/fontes"
+checar = { arquivo = "{cache}/acme/fontes/inter-latin-400-normal.woff2" }
+  [[requisito.receita]]
+  baixar = { url = "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.woff2", destino = "{cache}/acme/fontes/inter-latin-400-normal.woff2" }
+
+# Variável de ambiente (nunca segredo): o motor mostra a sintaxe do seu shell
+[[requisito]]
+id = "acme-cache"
+descricao = "Pasta de cache do acme"
+tipo = "variavel"
+obrigatorio = false
+variavel = { nome = "ACME_CACHE", valor = "{cache}/acme" }
+checar = { env = "ACME_CACHE" }
+  [[requisito.receita]]
+  manual = "Opcional: sem ela o acme usa o mesmo caminho."
+
+# PATH depois de instalar
+[[requisito]]
+id = "acme-cli"
+descricao = "CLI do acme no PATH"
+tipo = "path"
+obrigatorio = false
+depende_de = ["python"]
+checar = { comando = ["acme", "--version"], procurar_em = ["{home}/.local/bin"] }
+  [[requisito.receita]]
+  quando = { sistema = "windows" }
+  comandos = [["uv", "tool", "install", "acme-cli"]]
+  path = ["{home}/.local/bin"]
+  [[requisito.receita]]
+  comandos = [["uv", "tool", "install", "acme-cli"]]
+  path = ["{home}/.local/bin"]
+
+# Permissões do SO que só a pessoa concede
+[[requisito]]
+id = "permissao-microfone"
+descricao = "Acesso ao microfone para gravar"
+tipo = "permissao"
+obrigatorio = false
+  [[requisito.receita]]
+  quando = { sistema = "macos" }
+  manual = "Ajustes do Sistema > Privacidade e Segurança > Microfone: ative o seu terminal (e Gravação de Tela / Acessibilidade se a skill pedir)."
+  [[requisito.receita]]
+  quando = { sistema = "windows" }
+  manual = "Configurações > Privacidade e segurança > Microfone: permita apps da área de trabalho."
+  [[requisito.receita]]
+  quando = { sistema = "linux" }
+  checar = { comando = ["id", "-nG"], regex = "\\baudio\\b" }
+  manual = "Peça para entrar no grupo audio: sudo usermod -aG audio $USER (rode você e entre de novo)."
+
+[[requisito]]
+id = "caminhos-longos"
+descricao = "Caminhos longos no Windows (pastas de modelo passam de 260 caracteres)"
+tipo = "permissao"
+obrigatorio = false
+  [[requisito.receita]]
+  quando = { sistema = "windows" }
+  checar = { comando = ["reg", "query", "HKLM\\SYSTEM\\CurrentControlSet\\Control\\FileSystem", "/v", "LongPathsEnabled"], regex = "0x1" }
+  manual = "Ative você, num PowerShell de administrador: New-ItemProperty -Path HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem -Name LongPathsEnabled -Value 1 -PropertyType DWORD -Force (ou Modo de Desenvolvedor em Configurações > Para desenvolvedores)."
+  [[requisito.receita]]
+  dispensado = "Só o Windows limita o tamanho do caminho."
+
+# Serviço/agendador (launchd, systemd, Agendador de Tarefas; cron como alternativa)
+[[requisito]]
+id = "publicador"
+descricao = "Publicador agendado a cada 15 minutos"
+tipo = "servico"
+obrigatorio = false
+depende_de = ["acme-cli"]
+  [[requisito.receita]]
+  quando = { sistema = "macos" }
+  checar = { comando = ["launchctl", "list", "dev.acme.publicador"] }
+  comandos = [["acme", "agendar", "--gerar-plist"], ["launchctl", "load", "-w", "{home}/Library/LaunchAgents/dev.acme.publicador.plist"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux", wsl = false }
+  checar = { comando = ["systemctl", "--user", "is-enabled", "acme-publicador.timer"] }
+  comandos = [["acme", "agendar", "--gerar-systemd"], ["systemctl", "--user", "enable", "--now", "acme-publicador.timer"]]
+  [[requisito.receita]]
+  quando = { sistema = "linux" }
+  checar = { comando = ["crontab", "-l"], regex = "acme publicar" }
+  manual = "Sem systemd (WSL): rode você crontab -e e adicione */15 * * * * acme publicar"
+  [[requisito.receita]]
+  quando = { sistema = "windows" }
+  checar = { comando = ["schtasks", "/Query", "/TN", "AcmePublicador"] }
+  comandos = [["acme", "agendar", "--gerar-xml"], ["schtasks", "/Create", "/TN", "AcmePublicador", "/XML", "{raiz}/servico/acme-publicador.xml"]]
+
+# Credencial: só confere se existe; o motor nunca lê, grava nem mostra o valor
+[[requisito]]
+id = "token-api"
+descricao = "Token da API do acme guardado no cofre do sistema"
+tipo = "credencial"
+obrigatorio = false
+  [[requisito.receita]]
+  quando = { sistema = "macos" }
+  checar = { comando = ["security", "find-generic-password", "-s", "acme-skill"] }
+  manual = "Guarde você: security add-generic-password -s acme-skill -a <conta> -w (o macOS pede o valor; a IA nunca vê)."
+  [[requisito.receita]]
+  quando = { sistema = "linux" }
+  checar = { comando = ["secret-tool", "lookup", "service", "acme-skill"] }
+  manual = "Guarde você: secret-tool store --label=acme service acme-skill (pede o valor no terminal)."
+  [[requisito.receita]]
+  quando = { sistema = "windows" }
+  checar = { comando = ["cmdkey", "/list:acme-skill"], regex = "acme-skill" }
+  manual = "Guarde você no Gerenciador de Credenciais do Windows (Credenciais genéricas > acme-skill)."
+
+# Licença e login: sempre da pessoa
+[[requisito]]
+id = "licenca-modelo"
+descricao = "Aceite da licença do modelo (uso não comercial)"
+tipo = "pessoa"
+obrigatorio = false
+checar = { arquivo = "{dados}/acme/licenca-aceita" }
+  [[requisito.receita]]
+  manual = "Leia a licença em https://example.com/licenca e, se concordar, aceite VOCÊ com acme licenca --aceito. Ninguém aceita por você."
+
+[[requisito]]
+id = "login-github"
+descricao = "Acesso ao repositório privado"
+tipo = "pessoa"
+obrigatorio = false
+checar = { comando = ["gh", "auth", "status"] }
+  [[requisito.receita]]
+  manual = "Rode você: gh auth login e depois gh auth setup-git."
+
+# Máquina
+[[requisito]]
+id = "disco"
+descricao = "Espaço livre"
+tipo = "maquina"
+obrigatorio = false
+checar = { disco_gb = 10 }
+  [[requisito.receita]]
+  manual = "Libere cerca de 10 GB."
+
+# Não suportado, com alternativa honesta
+[[requisito]]
+id = "captura-de-tela"
+descricao = "Captura de janela nativa"
+tipo = "programa"
+obrigatorio = false
+checar = { comando = ["acme-captura", "--version"] }
+  [[requisito.receita]]
+  quando = { sistema = "windows" }
+  nao_suportado = "Sem captura nativa no Windows: use o WSL2 com WSLg ou o contêiner Docker do acme."
+  [[requisito.receita]]
+  comandos = [["uv", "tool", "install", "acme-captura"]]

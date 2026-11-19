@@ -1,0 +1,7 @@
+# LF em todo sistema (o CI roda no Windows também).
+* text=auto eol=lf
+# Cópias exatas do motor requisitos-para-ia: bytes iguais ao skills.lock, sem conversão de fim de linha.
+scripts/requisitos.py -text
+scripts/bootstrap.sh -text
+scripts/bootstrap.ps1 -text
+templates/requisitos-exemplo.toml -text

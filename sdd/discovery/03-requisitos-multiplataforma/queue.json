@@ -1,0 +1,30 @@
+{
+  "feature_id": "feat-03",
+  "branch": "feat/03-requisitos-multiplataforma",
+  "spec_status": "reviewed",
+  "updated_at": "2026-11-19T05:57:28Z",
+  "items": [
+    {
+      "task_id": "feat-03-01-requisitos-multiplataforma",
+      "title": "feat-03-01: requisitos multiplataforma pelo motor requisitos-para-ia",
+      "spec_path": "sdd/discovery/03-requisitos-multiplataforma/features/feat-03-01-requisitos-multiplataforma.md",
+      "status": "building",
+      "rules": [
+        "ARQ-04",
+        "ARQ-06",
+        "COD-01",
+        "COD-04",
+        "SEG-03",
+        "SEG-04",
+        "TST-01",
+        "TST-02",
+        "DUP-01",
+        "DUP-02",
+        "GOV-01",
+        "FLX-07"
+      ],
+      "skills_used": [],
+      "attempts": 1
+    }
+  ]
+}

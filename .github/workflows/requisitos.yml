@@ -1,0 +1,85 @@
+name: requisitos
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  requisitos:
+    name: requisitos (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      # Antes do setup-uv: sem o ok da pessoa, o bootstrap não instala nada (sai 4 se faltar o uv).
+      - name: bootstrap.sh sem ok (macOS e Linux)
+        if: runner.os != 'Windows'
+        run: |
+          set +e
+          sh scripts/bootstrap.sh < /dev/null
+          rc=$?
+          set -e
+          echo "bootstrap.sh saiu com $rc"
+          if command -v uv > /dev/null 2>&1; then [ "$rc" -le 1 ]; else [ "$rc" -eq 4 ]; fi
+
+      - name: bootstrap.ps1 sem ok (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $temUv = [bool](Get-Command uv -ErrorAction SilentlyContinue)
+          '' | powershell -NoProfile -ExecutionPolicy Bypass -File scripts/bootstrap.ps1
+          $rc = $LASTEXITCODE
+          Write-Output "bootstrap.ps1 saiu com $rc (uv antes: $temUv)"
+          if ($temUv) { if ($rc -gt 1) { exit 1 } } elseif ($rc -ne 4) { exit 1 }
+          exit 0
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: plataforma
+        run: uv run scripts/requisitos.py plataforma
+
+      - name: validar
+        run: uv run scripts/requisitos.py validar
+
+      # Sai 1 se faltar algo obrigatório (aceito aqui); 2 ou mais, ou JSON inválido, é quebra.
+      - name: checar --json
+        run: |
+          set +e
+          uv run scripts/requisitos.py checar --json > checar.json
+          rc=$?
+          set -e
+          cat checar.json
+          echo "checar saiu com $rc"
+          [ "$rc" -le 1 ]
+          uv run python -c "import json,sys; d=json.load(open('checar.json',encoding='utf-8')); print('ok' if d['ok'] else 'falta obrigatório', len(d['requisitos']), 'itens')"
+
+      - name: bootstrap.sh instalar --dry-run (macOS e Linux)
+        if: runner.os != 'Windows'
+        run: sh scripts/bootstrap.sh instalar --dry-run < /dev/null
+
+      - name: bootstrap.ps1 instalar --dry-run (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          '' | powershell -NoProfile -ExecutionPolicy Bypass -File scripts/bootstrap.ps1 instalar --dry-run
+          exit $LASTEXITCODE
+
+      - name: testes
+        run: |
+          uv run tests/test_verificar_readme.py
+          uv run tests/test_requisitos.py
+
+      - name: verificar README
+        run: uv run scripts/verificar_readme.py README.md
