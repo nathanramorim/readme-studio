@@ -120,6 +120,10 @@ tamanho = "cerca de 500 MB"
   checar = { arquivo = ["/usr/bin/google-chrome", "/usr/bin/chromium"] }
   comandos = [["pacman", "-S", "chromium"]]
   [[requisito.receita]]
+  quando = { sistema = "linux", gerenciador = "zypper" }
+  checar = { arquivo = ["/usr/bin/google-chrome", "/usr/bin/chromium"] }
+  comandos = [["zypper", "install", "chromium"]]
+  [[requisito.receita]]
   quando = { sistema = "linux" }
   checar = { arquivo = ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser", "/snap/bin/chromium"] }
   manual = "Instale o Chromium pelo gerenciador da sua distro (o Google Chrome não tem versão Linux arm64)."

@@ -2,13 +2,13 @@
   "feature_id": "feat-03",
   "branch": "feat/03-requisitos-multiplataforma",
   "spec_status": "reviewed",
-  "updated_at": "2026-11-19T05:57:28Z",
+  "updated_at": "2026-11-19T06:07:57Z",
   "items": [
     {
       "task_id": "feat-03-01-requisitos-multiplataforma",
       "title": "feat-03-01: requisitos multiplataforma pelo motor requisitos-para-ia",
       "spec_path": "sdd/discovery/03-requisitos-multiplataforma/features/feat-03-01-requisitos-multiplataforma.md",
-      "status": "building",
+      "status": "changes_requested",
       "rules": [
         "ARQ-04",
         "ARQ-06",
@@ -24,7 +24,68 @@
         "FLX-07"
       ],
       "skills_used": [],
-      "attempts": 1
+      "attempts": 1,
+      "governance_verdict": {
+        "veredito": "violacao",
+        "achados": [
+          {
+            "verificacao": "S-05",
+            "regra": "FLX-03",
+            "classificacao": "violacao",
+            "severidade": "media",
+            "arquivo": "scripts/verificar_readme.py",
+            "linha": 45,
+            "evidencia": "HOMEBREW = re.compile(r\"\\bbrew\\s+(?:install|bundle)\\b|homebrew|brew\\.sh\", re.IGNORECASE)",
+            "explicacao": "O pedido diz que o verificador deve falhar sempre que o bloco puser o Homebrew como pré-requisito, mas a regex só pega 'brew install', 'brew bundle', 'homebrew' e 'brew.sh'. No teste adversarial em /tmp, quatro blocos passaram sem nenhum problema apontado: um com `brew upgrade uv` (precisa do brew), um com `brew reinstall uv`, um com `brew tap astral-sh/uv` e um com o texto 'Antes, tenha o brew'. Assim, um README gerado continua podendo exigir o Homebrew sem ser barrado.",
+            "correcao": "No bloco, casar a palavra solta `\\bbrew\\b` (além de homebrew e brew.sh) e acrescentar testes para upgrade, reinstall, tap e o texto 'tenha o brew'."
+          },
+          {
+            "verificacao": "S-05",
+            "regra": "FLX-03",
+            "classificacao": "violacao",
+            "severidade": "media",
+            "arquivo": "scripts/verificar_readme.py",
+            "linha": 204,
+            "evidencia": "elif not any(comando_real(c, raiz, todos, nomes) for c in citados):",
+            "explicacao": "A função comando_real devolve True se qualquer caminho citado no comando existir, e não o próprio bootstrap. Com scripts/bootstrap.ps1 apagado, o bloco `uv run scripts/requisitos.py checar --x scripts/bootstrap.ps1` passou com zero problemas, porque o requisitos.py existe. Do mesmo jeito, citar `bootstrap.ps1` como comentário dentro de outro comando real conta como o caminho do Windows. Tanto o bootstrap ausente quanto o citado só de fachada escapam.",
+            "correcao": "Para cada bootstrap, extrair do comando o caminho que termina em bootstrap.ps1 ou bootstrap.sh e conferir que esse arquivo existe, com um teste de bootstrap ausente escondido ao lado do requisitos.py."
+          },
+          {
+            "verificacao": "S-05",
+            "regra": "FLX-03",
+            "classificacao": "duvida",
+            "severidade": "media",
+            "arquivo": "scripts/verificar_readme.py",
+            "linha": 263,
+            "evidencia": "faltam = [s for s in SISTEMAS if s.lower() not in secao.lower()]",
+            "explicacao": "O bloco do motor já traz as palavras Windows, macOS e Linux, então a checagem de sistemas nunca dispara num projeto que tenha o bloco. Em /tmp, um README com o bloco certo e uma tabela sem nenhuma linha por sistema passou com zero problemas. O teste test_requisitos_sem_um_sistema_falha (tests/test_verificar_readme.py:207) esconde isso porque tira o nome do sistema também do bloco. Com isso, a linha por sistema que o pedido exige para os READMEs gerados não é cobrada de fato.",
+            "correcao": "Procurar macOS, Linux e Windows na seção sem contar o bloco 'Cole isto na sua IA' (por exemplo, nas linhas da tabela) e testar com o bloco do motor intacto."
+          },
+          {
+            "verificacao": "S-05",
+            "regra": "FLX-03",
+            "classificacao": "duvida",
+            "severidade": "baixa",
+            "arquivo": "scripts/verificar_readme.py",
+            "linha": 234,
+            "evidencia": "if not any(re.search(r\"requisitos\\.py\\b.*\\binstalar\\b\", c) for c in comandos):",
+            "explicacao": "A exigência de instalar pelo motor é só uma busca de texto e não passa pelo comando_real. Em /tmp, o comando `echo requisitos.py instalar` passou nessa exigência.",
+            "correcao": "Exigir que o comando que contém 'instalar' também seja um comando real do projeto, apontando para o requisitos.py."
+          },
+          {
+            "verificacao": "S-05",
+            "regra": "ARQ-06",
+            "classificacao": "duvida",
+            "severidade": "baixa",
+            "arquivo": "README.md",
+            "linha": 47,
+            "evidencia": "`git` e Chromium pelo `apt`, `dnf`, `pacman` ou `zypper`",
+            "explicacao": "O requisitos.toml tem receita zypper só para o git. Para o Chromium no openSUSE, o motor cai no texto manual 'Instale o Chromium pelo gerenciador da sua distro'. A linha do README promete mais do que a receita entrega (Regra 6: sem invenção).",
+            "correcao": "Acrescentar ao requisitos.toml uma receita zypper para o chromium, com fonte, ou tirar o zypper do Chromium nessa linha."
+          }
+        ],
+        "resumo": "A Camada A passou inteira: test_verificar_readme (30 testes) e test_requisitos (6 testes) OK; `requisitos.py validar` aceitou a receita nas 3 plataformas; `checar --json` saiu 0 com JSON válido; `verificar_readme.py README.md` imprimiu 'requisitos: ok'; o bloco do README é idêntico à saída de `requisitos.py prompt`; o forge gate passou; os critérios 6 e 7 foram atendidos; e o CI do PR #5 está verde em ubuntu, windows e macos. As 4 cópias vendorizadas têm o mesmo sha256 do commit 5f63e02 e do skills.lock. O requisitos.toml segue o contrato: sem sudo nem -y, gerenciador sempre seguido de uma receita sem ele, nomes de pacote reais, itens da pessoa como manual, e o Homebrew aparece só como opção do macOS. A varredura FLX-08 não achou instrução embutida no diff, e S-01, S-02, S-04, S-06 e S-07 estão sem achados. O veredito é violação por dois furos no verificador, que é justamente a correção na raiz pedida: o bloco passa citando o Homebrew por formas como `brew upgrade` ou 'tenha o brew', e um bootstrap ausente passa quando é citado junto do requisitos.py. Há ainda uma dúvida média: a checagem de macOS/Linux/Windows nunca dispara, porque o próprio bloco do motor já cita os três sistemas. Não verifiquei o caminho do Python do uv no Windows (%APPDATA%\\uv\\python) porque não tive acesso à documentação do uv."
+      }
     }
   ]
 }

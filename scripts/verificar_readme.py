@@ -42,9 +42,12 @@ PASSO_INSTALACAO = re.compile(r"(plugin marketplace add|plugin install|git clone
 IGNORAR = {"node_modules", "sdd", "vendor", "dist", "build", "__pycache__", "venv", "site-packages"}
 EXT_SCRIPT = r"\.(?:py|sh|ps1|js|mjs|cjs|ts)"
 RECEITA = "requisitos.toml"
-HOMEBREW = re.compile(r"\bbrew\s+(?:install|bundle)\b|homebrew|brew\.sh", re.IGNORECASE)
+HOMEBREW = re.compile(r"\bbrew\b|homebrew", re.IGNORECASE)  # qualquer menção: o bloco do motor nunca cita
 SISTEMAS = ("macOS", "Linux", "Windows")
-BOOTSTRAP = (("bootstrap.ps1", "o caminho do Windows"), ("bootstrap.sh", "o caminho do macOS e do Linux"))
+BOOTSTRAP = (  # (nome, caminho, como o bloco do motor roda o arquivo)
+    ("bootstrap.ps1", "o caminho do Windows", re.compile(r"^powershell(?:\.exe)?\b.*\s-File\s+(\S*bootstrap\.ps1)(?:\s|$)", re.IGNORECASE)),
+    ("bootstrap.sh", "o caminho do macOS e do Linux", re.compile(r"^(?:sh|bash)\s+(\S*bootstrap\.sh)(?:\s|$)")),
+)
 
 
 def secao_requisitos(texto: str) -> str | None:
@@ -194,16 +197,36 @@ def comando_real(comando: str, raiz: Path, todos: list[Path], nomes: dict[str, s
     return partes[0] in executaveis
 
 
-def problemas_bootstrap(comandos: list[str], raiz: Path, todos: list[Path], nomes: dict[str, set[str]]) -> list[str]:
-    """O bloco precisa dos dois bootstraps do motor (Windows e macOS/Linux), e eles precisam existir."""
+def _existe(caminho: str, raiz: Path, todos: list[Path]) -> bool:
+    caminho = re.sub(r"^\$\{?\w+\}?/", "", caminho.replace("\\", "/")).lstrip("./")
+    return (raiz / caminho).is_file() or any(p.relative_to(raiz).as_posix().endswith(caminho) for p in todos)
+
+
+def problemas_bootstrap(comandos: list[str], raiz: Path, todos: list[Path]) -> list[str]:
+    """O bloco precisa rodar os dois bootstraps do motor (Windows e macOS/Linux), e eles precisam existir."""
     out = []
-    for nome, caminho in BOOTSTRAP:
-        citados = [c for c in comandos if nome in c]
-        if not citados:
-            out.append(f"o bloco 'Cole isto na sua IA' não tem {caminho} (`{nome}`)")
-        elif not any(comando_real(c, raiz, todos, nomes) for c in citados):
-            out.append(f"o bloco cita `{nome}`, mas o arquivo não existe no projeto (copie o do motor)")
+    for nome, caminho, forma in BOOTSTRAP:
+        rodados = [m.group(1) for m in (forma.match(c.strip()) for c in comandos) if m]
+        if not rodados:
+            out.append(f"o bloco 'Cole isto na sua IA' não tem {caminho} (um comando que roda `{nome}`, "
+                       "como no bloco de `requisitos.py prompt`)")
+        elif not any(_existe(c, raiz, todos) for c in rodados):
+            out.append(f"o bloco roda `{rodados[0]}`, mas o arquivo não existe no projeto (copie o do motor)")
     return out
+
+
+def instala_pelo_motor(comando: str, raiz: Path, todos: list[Path]) -> bool:
+    """`uv run <caminho>/requisitos.py [--arquivo X] instalar ...`, com o requisitos.py existindo no projeto."""
+    partes = comando.split()
+    if partes[:2] != ["uv", "run"]:
+        return False
+    alvo = _depois_das_opcoes(partes[2:])
+    if not alvo.endswith("requisitos.py") or not _existe(alvo, raiz, todos):
+        return False
+    resto = partes[partes.index(alvo) + 1:]
+    if resto[:1] == ["--arquivo"]:
+        resto = resto[2:]
+    return resto[:1] == ["instalar"]
 
 
 def problemas_prompt(texto: str, raiz: Path) -> list[str]:
@@ -230,8 +253,8 @@ def problemas_prompt(texto: str, raiz: Path) -> list[str]:
     if HOMEBREW.search(bloco):
         out.append("o bloco 'Cole isto na sua IA' cita o Homebrew: ele nunca é pré-requisito "
                    "(use o bloco de `requisitos.py prompt`)")
-    out += problemas_bootstrap(comandos, raiz, todos, nomes)
-    if not any(re.search(r"requisitos\.py\b.*\binstalar\b", c) for c in comandos):
+    out += problemas_bootstrap(comandos, raiz, todos)
+    if not any(instala_pelo_motor(c, raiz, todos) for c in comandos):
         out.append("o bloco 'Cole isto na sua IA' não manda instalar pelo `requisitos.py instalar`")
     if re.search(r"instal", bloco, flags=re.IGNORECASE) and not (
             re.search(r"n[ãa]o aceite", bloco, flags=re.IGNORECASE) and "licen" in bloco.lower()):
@@ -260,7 +283,9 @@ def problemas(texto: str, raiz: Path | None = None) -> list[str]:
     if secao is not None and "Onde roda" not in secao:
         out.append("a seção Requisitos não diz onde roda (sistema testado e agente)")
     if secao is not None:
-        faltam = [s for s in SISTEMAS if s.lower() not in secao.lower()]
+        bloco = bloco_prompt(secao)
+        fora_do_bloco = secao.replace(bloco, "") if bloco else secao  # o bloco do motor sempre cita os 3
+        faltam = [s for s in SISTEMAS if s.lower() not in fora_do_bloco.lower()]
         if faltam:
             out.append(f"a seção Requisitos não fala de {', '.join(faltam)} (uma linha por sistema; "
                        "o que não roda é dito, com alternativa)")

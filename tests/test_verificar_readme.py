@@ -173,7 +173,9 @@ class TestMultiplataforma(Base):
             self.assertEqual(self.erros(readme(bloco=bloco)), [], projeto)
 
     def test_homebrew_como_pre_requisito_falha(self):
-        for troca in ("instala o uv", "instala o uv com `brew install uv`"), ("Ele confere", "Instale o Homebrew. Ele confere"):
+        for troca in (("instala o uv", "instala o uv com `brew install uv`"), ("Ele confere", "Instale o Homebrew. Ele confere"),
+                      ("instala o uv", "instala o uv com `brew upgrade uv`"), ("instala o uv", "instala o uv com `brew reinstall uv`"),
+                      ("instala o uv", "instala o uv com `brew tap astral-sh/uv`"), ("Ele confere", "Antes, tenha o brew. Ele confere")):
             e = self.erros(readme(bloco=BOM.replace(*troca)))
             self.assertTrue(any("Homebrew" in x for x in e), (troca, e))
 
@@ -192,6 +194,22 @@ class TestMultiplataforma(Base):
         e = self.erros(readme())
         self.assertTrue(any("bootstrap.ps1" in x and "não existe" in x for x in e), e)
 
+    def test_bootstrap_de_fachada_falha(self):
+        """Citar o bootstrap como argumento de outro comando real não conta como rodar o bootstrap."""
+        (self.raiz / "scripts" / "bootstrap.ps1").unlink()
+        bloco = BOM.replace("`powershell -ExecutionPolicy Bypass -File scripts/bootstrap.ps1`",
+                            "`uv run scripts/requisitos.py checar --x scripts/bootstrap.ps1`")
+        e = self.erros(readme(bloco=bloco))
+        self.assertTrue(any("bootstrap.ps1" in x and "Windows" in x for x in e), e)
+        bloco = BOM.replace("`sh scripts/bootstrap.sh`", "`uv run scripts/requisitos.py checar # bootstrap.sh`")
+        e = self.erros(readme(bloco=bloco))
+        self.assertTrue(any("bootstrap.sh" in x and "Linux" in x for x in e), e)
+
+    def test_bootstrap_ausente_ao_lado_do_motor_falha(self):
+        (self.raiz / "scripts" / "bootstrap.sh").unlink()
+        e = self.erros(readme())
+        self.assertTrue(any("bootstrap.sh" in x and "não existe" in x for x in e), e)
+
     def test_dependencia_sem_requisitos_toml_falha(self):
         (self.raiz / "requisitos.toml").unlink()
         e = self.erros(readme())
@@ -200,15 +218,16 @@ class TestMultiplataforma(Base):
         self.assertTrue(any("falta o requisitos.toml" in x for x in e), e)
 
     def test_sem_instalar_pelo_motor_falha(self):
-        bloco = BOM.replace("rode `uv run scripts/requisitos.py instalar --sim <item>`", "instale")
-        e = self.erros(readme(bloco=bloco))
-        self.assertTrue(any("requisitos.py instalar" in x for x in e), e)
+        for troca in ("instale", "rode `echo requisitos.py instalar`", "rode `uv run scripts/inventado/requisitos.py instalar`",
+                      "rode `uv run scripts/requisitos.py checar instalar`"):
+            bloco = BOM.replace("rode `uv run scripts/requisitos.py instalar --sim <item>`", troca)
+            e = self.erros(readme(bloco=bloco))
+            self.assertTrue(any("requisitos.py instalar" in x for x in e), (troca, e))
 
     def test_requisitos_sem_um_sistema_falha(self):
         for sistema in ("Windows", "Linux", "macOS"):
             tabela = TABELA.replace(f"| ↳ {sistema} |", "| ↳ outro |").replace(sistema, "x")
-            bloco = BOM.replace(sistema, "x")
-            e = self.erros(readme(bloco=bloco, tabela=tabela))
+            e = self.erros(readme(tabela=tabela))  # o bloco do motor, intacto, cita os 3 e não conta
             self.assertTrue(any(f"não fala de {sistema}" in x for x in e), (sistema, e))
 
 
